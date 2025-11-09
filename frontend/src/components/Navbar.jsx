@@ -43,19 +43,22 @@ export default function Navbar() {
               Courses
             </Link>
             
-            {user ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">
-                  Profile
-                </Link>
-                <button 
-                  onClick={handleLogout}
-                  className="text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
+           {user ? (
+  <div className="flex items-center space-x-4">
+    <Link to="/my-courses" className="text-gray-600 hover:text-blue-600 transition-colors">
+      My Courses
+    </Link>
+    <Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">
+      Profile
+    </Link>
+    <button 
+      onClick={handleLogout}
+      className="text-gray-600 hover:text-blue-600 transition-colors"
+    >
+      Logout
+    </button>
+  </div>
+) : (
               <>
                 <Link to="/login" className="text-gray-600 hover:text-blue-600 transition-colors">
                   Login

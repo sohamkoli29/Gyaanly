@@ -114,5 +114,21 @@ export const formatCoursePrice = (price) => {
   }).format(price);
 };
 
+export const enrollmentsAPI = {
+  // Enroll in a course
+  enroll: (courseId) => 
+    apiRequest('/enrollments', {
+      method: 'POST',
+      body: { course_id: courseId },
+    }),
+  
+  // Get user's enrolled courses
+  getMyEnrollments: () => apiRequest('/enrollments/my-courses'),
+  
+  // Check if enrolled in a course
+  checkEnrollment: (courseId) => apiRequest(`/enrollments/check/${courseId}`),
+};
+
+
 
 export const healthCheck = () => apiRequest('/health');

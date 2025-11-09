@@ -4,7 +4,8 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Courses from './pages/Courses'
-import CourseDetail from './pages/CourseDetail' // Add this import
+import CourseDetail from './pages/CourseDetail'
+import MyCourses from './pages/MyCourses' // Add this import
 import Profile from './pages/Profile'
 
 function App() {
@@ -17,7 +18,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/courses" element={<Courses />} />
-          <Route path="/courses/:id" element={<CourseDetail />} /> {/* Add this route */}
+          <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/my-courses" element={<MyCourses />} /> {/* Add this route */}
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>

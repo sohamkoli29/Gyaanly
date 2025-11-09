@@ -4,7 +4,8 @@ import dotenv from 'dotenv';
 
 // Import routes
 import authRoutes from './routes/auth.js';
-import courseRoutes from './routes/courses.js'; // Add this line
+import courseRoutes from './routes/courses.js';
+import enrollmentRoutes from './routes/enrollments.js'; // Add this line
 
 dotenv.config();
 
@@ -29,7 +30,8 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       auth: '/api/auth',
-      courses: '/api/courses'
+      courses: '/api/courses',
+      enrollments: '/api/enrollments'
     }
   });
 });
@@ -44,7 +46,8 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/courses', courseRoutes); // Add this line
+app.use('/api/courses', courseRoutes);
+app.use('/api/enrollments', enrollmentRoutes); // Add this line
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -56,7 +59,9 @@ app.use('*', (req, res) => {
       '/api/health', 
       '/api/auth/profile', 
       '/api/courses',
-      '/api/courses/instructor/my-courses'
+      '/api/courses/instructor/my-courses',
+      '/api/enrollments',
+      '/api/enrollments/my-courses'
     ]
   });
 });
@@ -79,4 +84,7 @@ app.listen(PORT, () => {
   console.log(`   PUT  /api/courses/:id`);
   console.log(`   DEL  /api/courses/:id`);
   console.log(`   GET  /api/courses/instructor/my-courses`);
+  console.log(`   POST /api/enrollments`);
+  console.log(`   GET  /api/enrollments/my-courses`);
+  console.log(`   GET  /api/enrollments/check/:courseId`);
 });

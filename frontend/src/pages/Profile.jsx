@@ -37,28 +37,31 @@ export default function Profile() {
     }
   };
 
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    setUpdating(true);
-    setMessage('');
+ const handleUpdateProfile = async (e) => {
+  e.preventDefault();
+  setUpdating(true);
+  setMessage('');
 
-    try {
-      const formData = new FormData(e.target);
-      const profileData = {
-        full_name: formData.get('fullName'),
-        username: formData.get('username'),
-        avatar_url: formData.get('avatarUrl'),
-      };
+  try {
+    const formData = new FormData(e.target);
+    const profileData = {
+      full_name: formData.get('fullName'),
+      username: formData.get('username'),
+      avatar_url: formData.get('avatarUrl'),
+    };
 
-      const data = await authAPI.updateProfile(profileData);
-      setProfile(data.profile);
-      setMessage('Profile updated successfully!');
-    } catch (error) {
-      setMessage('Error updating profile: ' + error.message);
-    } finally {
-      setUpdating(false);
-    }
-  };
+    console.log('Updating profile with data:', profileData);
+
+    const data = await authAPI.updateProfile(profileData);
+    setProfile(data.profile);
+    setMessage('Profile updated successfully!');
+  } catch (error) {
+    console.error('Update profile error:', error);
+    setMessage(`Error updating profile: ${error.message}`);
+  } finally {
+    setUpdating(false);
+  }
+};
 
   if (loading) {
     return (

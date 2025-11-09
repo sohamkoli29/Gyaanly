@@ -27,18 +27,31 @@ const apiRequest = async (endpoint, options = {}) => {
       config.body = JSON.stringify(options.body);
     }
 
-    console.log(`API Request: ${endpoint}`, { token: !!token });
+    console.log(`API Request: ${endpoint}`, { 
+      token: !!token,
+      method: config.method,
+      body: config.body 
+    });
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ 
-        error: `HTTP error! status: ${response.status}` 
-      }));
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        errorData = { error: `HTTP error! status: ${response.status}` };
+      }
       throw new Error(errorData.error || `Request failed with status ${response.status}`);
     }
 
-    return response.json();
+    // Try to parse response as JSON
+    try {
+      return await response.json();
+    } catch (jsonError) {
+      console.error('JSON parse error:', jsonError);
+      throw new Error('Invalid JSON response from server');
+    }
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;

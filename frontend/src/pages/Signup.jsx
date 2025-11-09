@@ -47,22 +47,43 @@ const handleSignup = async (e) => {
     if (authError) throw authError;
 
     if (authData.user) {
-      console.log('User created, now creating profile via backend...');
+      console.log('User created, attempting to create profile...');
       
-      // Instead of creating profile directly, login and let backend handle it
-      // Sign in immediately to get token
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
+      // Try to create profile via backend API
+      try {
+        // Sign in immediately to get token
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
 
-      if (signInError) {
-        console.log('Sign in error, user will create profile on first login:', signInError);
-        // Continue anyway - profile will be created when user first logs in
+        if (signInError) throw signInError;
+
+        // Create profile using backend API
+        const profileData = {
+          full_name: formData.fullName,
+          username: formData.email.split('@')[0],
+          avatar_url: ''
+        };
+
+        // This will trigger profile creation in backend
+        await fetch('http://localhost:5000/api/auth/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${signInData.session.access_token}`
+          },
+          body: JSON.stringify(profileData)
+        });
+
+        console.log('Profile creation attempted via backend');
+        
+      } catch (profileError) {
+        console.log('Profile creation may have failed, but user can create it later:', profileError);
       }
 
       // Show success message
-      alert('Account created successfully! You can now login.');
+      alert('Account created successfully! You can now login and complete your profile.');
       navigate('/login');
     }
   } catch (error) {

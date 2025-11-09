@@ -1,15 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Fix for __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Import routes
 import authRoutes from './routes/auth.js';
+import courseRoutes from './routes/courses.js'; // Add this line
 
 dotenv.config();
 
@@ -33,7 +28,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
-      auth: '/api/auth'
+      auth: '/api/auth',
+      courses: '/api/courses'
     }
   });
 });
@@ -46,13 +42,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// MOUNT ROUTES - This is the critical part
+// API Routes
 app.use('/api/auth', authRoutes);
-
-// Test if auth routes are working
-app.get('/api/test-auth-route', (req, res) => {
-  res.json({ message: 'Auth route test - working!' });
-});
+app.use('/api/courses', courseRoutes); // Add this line
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -60,7 +52,12 @@ app.use('*', (req, res) => {
   res.status(404).json({ 
     error: 'Route not found',
     requested: req.originalUrl,
-    available: ['/api/health', '/api/auth/profile', '/api/test-auth-route']
+    available: [
+      '/api/health', 
+      '/api/auth/profile', 
+      '/api/courses',
+      '/api/courses/instructor/my-courses'
+    ]
   });
 });
 
@@ -76,5 +73,10 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/health`);
   console.log(`   GET  /api/auth/profile`);
   console.log(`   PUT  /api/auth/profile`);
-  console.log(`   GET  /api/auth/users`);
+  console.log(`   GET  /api/courses`);
+  console.log(`   GET  /api/courses/:id`);
+  console.log(`   POST /api/courses`);
+  console.log(`   PUT  /api/courses/:id`);
+  console.log(`   DEL  /api/courses/:id`);
+  console.log(`   GET  /api/courses/instructor/my-courses`);
 });

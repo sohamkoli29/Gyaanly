@@ -71,4 +71,48 @@ export const authAPI = {
   getUsers: () => apiRequest('/auth/users'),
 };
 
+// ... existing code ...
+
+// Course API calls
+export const coursesAPI = {
+  // Get all published courses
+  getCourses: () => apiRequest('/courses'),
+  
+  // Get single course by ID
+  getCourse: (id) => apiRequest(`/courses/${id}`),
+  
+  // Create new course
+  createCourse: (courseData) => 
+    apiRequest('/courses', {
+      method: 'POST',
+      body: courseData,
+    }),
+  
+  // Update course
+  updateCourse: (id, courseData) => 
+    apiRequest(`/courses/${id}`, {
+      method: 'PUT',
+      body: courseData,
+    }),
+  
+  // Delete course
+  deleteCourse: (id) => 
+    apiRequest(`/courses/${id}`, {
+      method: 'DELETE',
+    }),
+  
+  // Get instructor's courses
+  getMyCourses: () => apiRequest('/courses/instructor/my-courses'),
+};
+
+export const formatCoursePrice = (price) => {
+  if (price === 0) return 'Free';
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(price);
+};
+
+
 export const healthCheck = () => apiRequest('/health');

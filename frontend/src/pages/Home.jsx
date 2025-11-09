@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../services/supabaseClient'
+import { formatCurrency } from '../utils/currency'
 
 export default function Home() {
   const [user, setUser] = useState(null)
@@ -152,19 +153,22 @@ export default function Home() {
                     <h3 className="text-xl font-semibold mb-2">{course.title}</h3>
                     <p className="text-gray-600 mb-4 line-clamp-2">{course.description}</p>
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-bold text-blue-600">{course.price === 0 ? 'Free' : `$${course.price}`}</span>
-                      <span className="text-yellow-500">⭐ {course.rating || '4.5'}</span>
-                    </div>
+                          <span className="text-lg font-bold text-blue-600">
+                            {formatCurrency(course.price)}
+                          </span>
+                          <span className="text-yellow-500">⭐ {course.rating || '4.5'}</span>
+                        </div>
                     <div className="flex justify-between items-center text-sm text-gray-500">
                       <span>By {course.profiles?.full_name || 'Instructor'}</span>
                       <span>{course.duration_hours || 0}h</span>
                     </div>
-                    <Link 
-                      to={`/courses/${course.id}`}
-                      className="block w-full mt-4 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Enroll Now
-                    </Link>
+                   
+                      <Link 
+                        to={`/courses/${course.id}`}
+                        className="block w-full mt-4 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 transition-colors"
+                      >
+                        View Course
+                      </Link>
                   </div>
                 </div>
               ))

@@ -71,7 +71,25 @@ export const authAPI = {
   getUsers: () => apiRequest('/auth/users'),
 };
 
-// ... existing code ...
+export const uploadAPI = {
+  // Get signed URL for video upload
+  getSignedUrl: (uploadData) =>
+    apiRequest('/upload/signed-url', {
+      method: 'POST',
+      body: uploadData,
+    }),
+
+  // Confirm video upload
+  confirmUpload: (confirmData) =>
+    apiRequest('/upload/confirm-upload', {
+      method: 'POST',
+      body: confirmData,
+    }),
+
+  // Get signed URL for video streaming
+  getStreamUrl: (lessonId) =>
+    apiRequest(`/upload/stream/${lessonId}`),
+};
 
 // Course API calls
 export const coursesAPI = {
@@ -103,6 +121,23 @@ export const coursesAPI = {
   
   // Get instructor's courses
   getMyCourses: () => apiRequest('/courses/instructor/my-courses'),
+
+   createLesson: (courseId, lessonData) =>
+    apiRequest(`/courses/${courseId}/lessons`, {
+      method: 'POST',
+      body: lessonData,
+    }),
+
+  updateLesson: (lessonId, lessonData) =>
+    apiRequest(`/courses/lessons/${lessonId}`, {
+      method: 'PUT',
+      body: lessonData,
+    }),
+
+  deleteLesson: (lessonId) =>
+    apiRequest(`/courses/lessons/${lessonId}`, {
+      method: 'DELETE',
+    }),
 };
 
 export const formatCoursePrice = (price) => {
@@ -128,6 +163,7 @@ export const enrollmentsAPI = {
   // Check if enrolled in a course
   checkEnrollment: (courseId) => apiRequest(`/enrollments/check/${courseId}`),
 };
+
 
 
 

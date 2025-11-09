@@ -43,8 +43,11 @@ export default function Navbar() {
               Courses
             </Link>
             
-           {user ? (
+      {user ? (
   <div className="flex items-center space-x-4">
+    <Link to="/instructor/dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
+      Instructor
+    </Link>
     <Link to="/my-courses" className="text-gray-600 hover:text-blue-600 transition-colors">
       My Courses
     </Link>

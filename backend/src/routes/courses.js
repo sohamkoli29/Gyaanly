@@ -284,4 +284,170 @@ router.get('/instructor/my-courses', authenticateToken, async (req, res) => {
   }
 });
 
+
+// Add these routes to the existing courses.js file
+
+// POST /api/courses/:courseId/lessons - Create new lesson
+router.post('/:courseId/lessons', authenticateToken, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { title, description, duration_minutes, order_index } = req.body;
+    const user_id = req.user.id;
+
+    // Verify user owns the course
+    const { data: course, error: courseError } = await supabase
+      .from('courses')
+      .select('instructor_id')
+      .eq('id', courseId)
+      .single();
+
+    if (courseError || !course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    if (course.instructor_id !== user_id) {
+      return res.status(403).json({ error: 'Not authorized to add lessons to this course' });
+    }
+
+    // Create lesson
+    const { data: lesson, error } = await supabase
+      .from('lessons')
+      .insert([
+        {
+          course_id: courseId,
+          title,
+          description: description || '',
+          duration_minutes: duration_minutes || 0,
+          order_index: order_index || 0,
+          video_path: null,
+          video_size: null,
+          video_duration: null,
+          upload_status: 'pending'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating lesson:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json({
+      message: 'Lesson created successfully',
+      lesson
+    });
+  } catch (error) {
+    console.error('Lesson creation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /api/courses/lessons/:lessonId - Update lesson
+router.put('/lessons/:lessonId', authenticateToken, async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const { title, description, duration_minutes, order_index } = req.body;
+    const user_id = req.user.id;
+
+    // Verify user owns the lesson
+    const { data: lesson, error: lessonError } = await supabase
+      .from('lessons')
+      .select(`
+        *,
+        courses!inner(instructor_id)
+      `)
+      .eq('id', lessonId)
+      .single();
+
+    if (lessonError || !lesson) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    if (lesson.courses.instructor_id !== user_id) {
+      return res.status(403).json({ error: 'Not authorized to update this lesson' });
+    }
+
+    // Update lesson
+    const { data: updatedLesson, error } = await supabase
+      .from('lessons')
+      .update({
+        title,
+        description,
+        duration_minutes,
+        order_index,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', lessonId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating lesson:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({
+      message: 'Lesson updated successfully',
+      lesson: updatedLesson
+    });
+  } catch (error) {
+    console.error('Lesson update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/courses/lessons/:lessonId - Delete lesson
+router.delete('/lessons/:lessonId', authenticateToken, async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const user_id = req.user.id;
+
+    // Verify user owns the lesson
+    const { data: lesson, error: lessonError } = await supabase
+      .from('lessons')
+      .select(`
+        video_path,
+        courses!inner(instructor_id)
+      `)
+      .eq('id', lessonId)
+      .single();
+
+    if (lessonError || !lesson) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    if (lesson.courses.instructor_id !== user_id) {
+      return res.status(403).json({ error: 'Not authorized to delete this lesson' });
+    }
+
+    // Delete video from storage if exists
+    if (lesson.video_path) {
+      const { error: storageError } = await supabase.storage
+        .from('videos')
+        .remove([lesson.video_path]);
+
+      if (storageError) {
+        console.error('Error deleting video from storage:', storageError);
+        // Continue with lesson deletion even if storage delete fails
+      }
+    }
+
+    // Delete lesson
+    const { error } = await supabase
+      .from('lessons')
+      .delete()
+      .eq('id', lessonId);
+
+    if (error) {
+      console.error('Error deleting lesson:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ message: 'Lesson deleted successfully' });
+  } catch (error) {
+    console.error('Lesson deletion error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 export default router;

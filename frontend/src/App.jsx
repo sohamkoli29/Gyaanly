@@ -5,8 +5,9 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Courses from './pages/Courses'
 import CourseDetail from './pages/CourseDetail'
-import MyCourses from './pages/MyCourses' // Add this import
+import MyCourses from './pages/MyCourses'
 import Profile from './pages/Profile'
+import InstructorDashboard from './pages/InstructorDashboard' // Add this import
 
 function App() {
   return (
@@ -19,8 +20,9 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
-          <Route path="/my-courses" element={<MyCourses />} /> {/* Add this route */}
+          <Route path="/my-courses" element={<MyCourses />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/instructor/dashboard" element={<InstructorDashboard />} /> {/* Add this route */}
         </Routes>
       </main>
     </div>

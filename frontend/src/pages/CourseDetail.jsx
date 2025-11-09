@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { coursesAPI } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 import { formatCurrency, formatPrice } from '../utils/currency';
+import VideoPlayer from '../components/VideoPlayer';
+
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -188,45 +190,47 @@ export default function CourseDetail() {
           </div>
 
           {/* Video Player Section */}
-          <div className="mb-6">
-            <div className="bg-black rounded-lg overflow-hidden">
-              {selectedLesson && selectedLesson.video_url ? (
-                <div className="aspect-w-16 aspect-h-9">
-                  <iframe
-                    src={selectedLesson.video_url}
-                    title={selectedLesson.title}
-                    className="w-full h-64 lg:h-96"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              ) : (
-                <div className="w-full h-64 lg:h-96 bg-gray-800 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <div className="text-4xl mb-2">🎬</div>
-                    <p className="text-lg">
-                      {isEnrolled || course.price === 0 
-                        ? 'Select a lesson to start watching' 
-                        : 'Enroll to access course videos'
-                      }
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {selectedLesson && (
-              <div className="mt-4">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {selectedLesson.title}
-                </h3>
-                <p className="text-gray-600">{selectedLesson.description}</p>
-                <div className="flex items-center mt-2 text-sm text-gray-500">
-                  <span>Duration: {selectedLesson.duration_minutes} minutes</span>
-                </div>
-              </div>
-            )}
-          </div>
+       
+<div className="mb-6">
+  <div className="bg-black rounded-lg overflow-hidden">
+    {selectedLesson && selectedLesson.video_path ? (
+      <VideoPlayer
+        lessonId={selectedLesson.id}
+        videoPath={selectedLesson.video_path}
+        className="w-full h-64 lg:h-96"
+      />
+    ) : (
+      <div className="w-full h-64 lg:h-96 bg-gray-800 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="text-4xl mb-2">🎬</div>
+          <p className="text-lg">
+            {isEnrolled || course.price === 0 
+              ? 'Select a lesson to start watching' 
+              : 'Enroll to access course videos'
+            }
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
+  
+  {selectedLesson && (
+    <div className="mt-4">
+      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        {selectedLesson.title}
+      </h3>
+      <p className="text-gray-600">{selectedLesson.description}</p>
+      <div className="flex items-center mt-2 text-sm text-gray-500">
+        <span>Duration: {selectedLesson.duration_minutes} minutes</span>
+        {selectedLesson.video_size && (
+          <span className="ml-4">
+            Size: {(selectedLesson.video_size / (1024 * 1024)).toFixed(2)} MB
+          </span>
+        )}
+      </div>
+    </div>
+  )}
+</div>
 
           <div className="prose max-w-none mb-6">
             <p className="text-gray-700 text-lg">{course.description}</p>

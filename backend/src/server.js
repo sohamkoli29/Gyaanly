@@ -5,7 +5,11 @@ import dotenv from 'dotenv';
 // Import routes
 import authRoutes from './routes/auth.js';
 import courseRoutes from './routes/courses.js';
-import enrollmentRoutes from './routes/enrollments.js'; // Add this line
+import enrollmentRoutes from './routes/enrollments.js';
+import uploadRoutes from './routes/upload.js'; 
+
+import debugRoutes from './routes/debug.js';
+
 
 dotenv.config();
 
@@ -31,7 +35,8 @@ app.get('/', (req, res) => {
       health: '/api/health',
       auth: '/api/auth',
       courses: '/api/courses',
-      enrollments: '/api/enrollments'
+      enrollments: '/api/enrollments',
+       upload: '/api/upload'
     }
   });
 });
@@ -47,7 +52,9 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
-app.use('/api/enrollments', enrollmentRoutes); // Add this line
+app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/debug', debugRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

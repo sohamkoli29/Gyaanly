@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { coursesAPI } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 import LessonManager from '../components/LessonManager';
+import VideoPlayer from '../components/VideoPlayer'; // ADD THIS IMPORT
 import { formatCurrency } from '../utils/currency';
 
 export default function InstructorDashboard() {
@@ -235,6 +236,50 @@ export default function InstructorDashboard() {
                 </button>
               </div>
 
+              {/* ADD VIDEO PREVIEW SECTION FOR INSTRUCTOR */}
+              <div className="mb-8 bg-gray-50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Course Video Preview</h3>
+                {selectedCourse.lessons && selectedCourse.lessons.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedCourse.lessons
+                      .filter(lesson => lesson.video_path) // Only show lessons with videos
+                      .sort((a, b) => a.order_index - b.order_index)
+                      .map((lesson, index) => (
+                        <div key={lesson.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                          <h4 className="font-semibold text-lg mb-2">
+                            Lesson {index + 1}: {lesson.title}
+                          </h4>
+                          <div className="bg-black rounded-lg overflow-hidden">
+                            <VideoPlayer
+                              lessonId={lesson.id}
+                              videoPath={lesson.video_path}
+                              className="w-full h-48"
+                            />
+                          </div>
+                          <div className="mt-2 text-sm text-gray-600">
+                            <p>Duration: {lesson.duration_minutes} minutes</p>
+                            <p>File Size: {lesson.video_size ? (lesson.video_size / (1024 * 1024)).toFixed(1) + ' MB' : 'N/A'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {selectedCourse.lessons.filter(lesson => lesson.video_path).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <div className="text-4xl mb-2">🎬</div>
+                        <p>No videos uploaded yet for this course.</p>
+                        <p className="text-sm">Use the lesson manager below to add videos to your lessons.</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="text-4xl mb-2">📚</div>
+                    <p>No lessons created yet for this course.</p>
+                    <p className="text-sm">Use the lesson manager below to add lessons.</p>
+                  </div>
+                )}
+              </div>
+
               <LessonManager
                 courseId={selectedCourse.id}
                 lessons={selectedCourse.lessons}
@@ -268,7 +313,7 @@ export default function InstructorDashboard() {
   );
 }
 
-// Course Form Component
+// Course Form Component (keep the same as before)
 function CourseForm({ course, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
     title: course?.title || '',

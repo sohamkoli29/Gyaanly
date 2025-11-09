@@ -191,4 +191,24 @@ router.get('/stream/:lessonId', authenticateToken, async (req, res) => {
   }
 });
 
+
+// Add this to your upload.js routes for debugging
+router.get('/test-storage', authenticateToken, async (req, res) => {
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      return res.status(500).json({ error: 'Storage error: ' + error.message });
+    }
+
+    res.json({
+      buckets,
+      hasVideosBucket: buckets.some(b => b.name === 'videos')
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 export default router;

@@ -88,7 +88,12 @@ export const uploadAPI = {
 
   // Get signed URL for video streaming
   getStreamUrl: (lessonId) =>
-    apiRequest(`/upload/stream/${lessonId}`),
+  apiRequest(`/upload/stream/${lessonId}`, {
+    headers: {
+      'Cache-Control': 'no-cache'
+    }
+  }),
+  
 };
 
 // Course API calls

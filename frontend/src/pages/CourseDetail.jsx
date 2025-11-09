@@ -190,9 +190,9 @@ export default function CourseDetail() {
           </div>
 
           {/* Video Player Section */}
-       
-<div className="mb-6">
-  <div className="bg-black rounded-lg overflow-hidden">
+{/* Video Player Section */}
+<div className="mb-8">
+  <div className="bg-gray-900 rounded-lg overflow-hidden shadow-lg">
     {selectedLesson && selectedLesson.video_path ? (
       <VideoPlayer
         lessonId={selectedLesson.id}
@@ -202,11 +202,17 @@ export default function CourseDetail() {
     ) : (
       <div className="w-full h-64 lg:h-96 bg-gray-800 flex items-center justify-center">
         <div className="text-center text-white">
-          <div className="text-4xl mb-2">🎬</div>
-          <p className="text-lg">
+          <div className="text-4xl mb-3">🎬</div>
+          <p className="text-xl font-medium mb-2">
             {isEnrolled || course.price === 0 
-              ? 'Select a lesson to start watching' 
-              : 'Enroll to access course videos'
+              ? 'Video Not Available' 
+              : 'Enroll to Access Videos'
+            }
+          </p>
+          <p className="text-gray-400">
+            {isEnrolled || course.price === 0 
+              ? 'The instructor hasn\'t uploaded a video for this lesson yet.' 
+              : 'Purchase this course to watch all videos'
             }
           </p>
         </div>
@@ -215,16 +221,16 @@ export default function CourseDetail() {
   </div>
   
   {selectedLesson && (
-    <div className="mt-4">
+    <div className="mt-4 bg-white rounded-lg p-4 shadow-sm">
       <h3 className="text-xl font-semibold text-gray-900 mb-2">
         {selectedLesson.title}
       </h3>
-      <p className="text-gray-600">{selectedLesson.description}</p>
-      <div className="flex items-center mt-2 text-sm text-gray-500">
+      <p className="text-gray-600 mb-3">{selectedLesson.description}</p>
+      <div className="flex items-center text-sm text-gray-500 space-x-4">
         <span>Duration: {selectedLesson.duration_minutes} minutes</span>
-        {selectedLesson.video_size && (
-          <span className="ml-4">
-            Size: {(selectedLesson.video_size / (1024 * 1024)).toFixed(2)} MB
+        {selectedLesson.video_path && (
+          <span className="text-green-600 font-medium">
+            ✅ Video Available
           </span>
         )}
       </div>

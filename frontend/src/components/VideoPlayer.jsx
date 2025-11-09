@@ -8,16 +8,15 @@ export default function VideoPlayer({ lessonId, videoPath, className = '' }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    fetchSignedUrl();
+    if (lessonId && videoPath) {
+      fetchSignedUrl();
+    } else {
+      setLoading(false);
+      setError('No video available for this lesson');
+    }
   }, [lessonId, videoPath]);
 
   const fetchSignedUrl = async () => {
-    if (!lessonId || !videoPath) {
-      setLoading(false);
-      setError('No video available for this lesson');
-      return;
-    }
-
     try {
       setLoading(true);
       setError('');
@@ -29,7 +28,7 @@ export default function VideoPlayer({ lessonId, videoPath, className = '' }) {
         throw new Error('No signed URL received from server');
       }
       
-      console.log('Signed URL received:', response.signedUrl.substring(0, 100) + '...');
+      console.log('Signed URL received successfully');
       setSignedUrl(response.signedUrl);
     } catch (err) {
       console.error('Error fetching signed URL:', err);
@@ -44,10 +43,8 @@ export default function VideoPlayer({ lessonId, videoPath, className = '' }) {
     console.error('Video playback error:', {
       error: video.error,
       errorCode: video.error?.code,
-      errorMessage: video.error?.message,
       networkState: video.networkState,
-      readyState: video.readyState,
-      src: video.src
+      readyState: video.readyState
     });
 
     let errorMessage = 'Video playback failed. ';
@@ -61,7 +58,7 @@ export default function VideoPlayer({ lessonId, videoPath, className = '' }) {
           errorMessage += 'Network error occurred.';
           break;
         case video.error.MEDIA_ERR_DECODE:
-          errorMessage += 'Video format not supported. Try MP4 with H.264 codec.';
+          errorMessage += 'Video format not supported.';
           break;
         case video.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
           errorMessage += 'Video format not supported by your browser.';
@@ -82,10 +79,11 @@ export default function VideoPlayer({ lessonId, videoPath, className = '' }) {
 
   if (loading) {
     return (
-      <div className={`bg-gray-800 flex items-center justify-center ${className}`}>
-        <div className="text-white text-center">
+      <div className={`bg-gray-900 flex items-center justify-center rounded-lg ${className}`}>
+        <div className="text-white text-center p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Loading video...</p>
+          <p className="text-lg">Loading video...</p>
+          <p className="text-sm text-gray-400 mt-2">Please wait</p>
         </div>
       </div>
     );
@@ -93,22 +91,16 @@ export default function VideoPlayer({ lessonId, videoPath, className = '' }) {
 
   if (error) {
     return (
-      <div className={`bg-gray-800 flex items-center justify-center ${className}`}>
-        <div className="text-white text-center p-4">
-          <div className="text-4xl mb-2">❌</div>
-          <p className="text-lg mb-2">{error}</p>
-          <div className="space-x-2">
+      <div className={`bg-gray-900 flex items-center justify-center rounded-lg ${className}`}>
+        <div className="text-white text-center p-6">
+          <div className="text-4xl mb-3">❌</div>
+          <p className="text-lg font-medium mb-3">{error}</p>
+          <div className="space-x-3">
             <button
               onClick={handleRetry}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Retry
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-            >
-              Reload Page
+              Try Again
             </button>
           </div>
         </div>
@@ -118,41 +110,33 @@ export default function VideoPlayer({ lessonId, videoPath, className = '' }) {
 
   if (!signedUrl) {
     return (
-      <div className={`bg-gray-800 flex items-center justify-center ${className}`}>
-        <div className="text-white text-center">
-          <div className="text-4xl mb-2">🎬</div>
-          <p className="text-lg">Video not available</p>
-          <p className="text-sm text-gray-300 mt-1">The video may still be processing</p>
+      <div className={`bg-gray-900 flex items-center justify-center rounded-lg ${className}`}>
+        <div className="text-white text-center p-6">
+          <div className="text-4xl mb-3">🎬</div>
+          <p className="text-lg font-medium mb-2">Video Not Available</p>
+          <p className="text-gray-400">The video may still be processing or is not available</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={className}>
+    <div className={`bg-black rounded-lg overflow-hidden ${className}`}>
       <video
         ref={videoRef}
         controls
         controlsList="nodownload"
-        className="w-full h-full bg-black rounded"
+        className="w-full h-full"
         onError={handleVideoError}
         onLoadStart={() => console.log('Video loading started')}
         onCanPlay={() => console.log('Video can start playing')}
         onPlaying={() => console.log('Video started playing')}
+        preload="metadata"
       >
         <source src={signedUrl} type="video/mp4" />
         <source src={signedUrl} type="video/webm" />
-        <source src={signedUrl} type="video/quicktime" />
         Your browser does not support the video tag.
-        <track kind="captions" src="" srcLang="en" label="English" default />
       </video>
-      
-      {/* Video Info Debug */}
-      <div className="mt-2 text-xs text-gray-500 bg-gray-100 p-2 rounded">
-        <div>Video Source: {signedUrl.substring(0, 80)}...</div>
-        <div>Lesson ID: {lessonId}</div>
-        <div>Path: {videoPath}</div>
-      </div>
     </div>
   );
 }

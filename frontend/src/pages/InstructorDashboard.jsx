@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { coursesAPI } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 import LessonManager from '../components/LessonManager';
-import VideoPlayer from '../components/VideoPlayer'; // ADD THIS IMPORT
+import VideoPlayer from '../components/VideoPlayer';
 import { formatCurrency } from '../utils/currency';
+import VideoDebugger from '../components/VideoDebugger';
+
 
 export default function InstructorDashboard() {
   const [courses, setCourses] = useState([]);
@@ -236,7 +238,7 @@ export default function InstructorDashboard() {
                 </button>
               </div>
 
-              {/* ADD VIDEO PREVIEW SECTION FOR INSTRUCTOR */}
+              {/* VIDEO PREVIEW SECTION - FIXED */}
               <div className="mb-8 bg-gray-50 rounded-lg p-6">
                 <h3 className="text-xl font-semibold mb-4">Course Video Preview</h3>
                 {selectedCourse.lessons && selectedCourse.lessons.length > 0 ? (
@@ -249,16 +251,27 @@ export default function InstructorDashboard() {
                           <h4 className="font-semibold text-lg mb-2">
                             Lesson {index + 1}: {lesson.title}
                           </h4>
+                          {lesson.description && (
+                            <p className="text-gray-600 text-sm mb-3">{lesson.description}</p>
+                          )}
                           <div className="bg-black rounded-lg overflow-hidden">
+                            {/* FIXED: Passing lessonId and videoPath correctly */}
                             <VideoPlayer
                               lessonId={lesson.id}
                               videoPath={lesson.video_path}
-                              className="w-full h-48"
+                              className="w-full h-64"
                             />
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
-                            <p>Duration: {lesson.duration_minutes} minutes</p>
-                            <p>File Size: {lesson.video_size ? (lesson.video_size / (1024 * 1024)).toFixed(1) + ' MB' : 'N/A'}</p>
+                          <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                            <div className="flex items-center space-x-4">
+                              <span>Duration: {lesson.duration_minutes || 0} minutes</span>
+                              <span>
+                                File Size: {lesson.video_size ? (lesson.video_size / (1024 * 1024)).toFixed(1) + ' MB' : 'N/A'}
+                              </span>
+                              <span className="text-green-600 font-medium">
+                                ✅ Ready to stream
+                              </span>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -280,9 +293,18 @@ export default function InstructorDashboard() {
                 )}
               </div>
 
+
+
+                  {selectedCourse && (
+  <VideoDebugger 
+    courseId={selectedCourse.id}
+    lessons={selectedCourse.lessons || []}
+  />
+  )}
+              {/* LESSON MANAGER */}
               <LessonManager
                 courseId={selectedCourse.id}
-                lessons={selectedCourse.lessons}
+                lessons={selectedCourse.lessons || []}
                 onLessonsUpdate={(updatedLessons) => {
                   setSelectedCourse(prev => ({
                     ...prev,
@@ -313,7 +335,7 @@ export default function InstructorDashboard() {
   );
 }
 
-// Course Form Component (keep the same as before)
+// Course Form Component
 function CourseForm({ course, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
     title: course?.title || '',

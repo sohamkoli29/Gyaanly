@@ -4,8 +4,17 @@ const API_BASE_URL = 'http://localhost:5000/api';
 
 // Helper to get current session token
 const getToken = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token;
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error getting session:', error);
+      return null;
+    }
+    return session?.access_token || null;
+  } catch (error) {
+    console.error('Exception getting token:', error);
+    return null;
+  }
 };
 
 // Generic API request function
@@ -13,25 +22,29 @@ const apiRequest = async (endpoint, options = {}) => {
   try {
     const token = await getToken();
     
+    // Log for debugging
+    console.log(`API Request: ${endpoint}`, { 
+      hasToken: !!token,
+      method: options.method || 'GET'
+    });
+    
+    if (!token) {
+      throw new Error('Access token required');
+    }
+    
     const config = {
+      method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
+        'Authorization': `Bearer ${token}`,
         ...options.headers,
       },
-      ...options,
     };
 
     // Add body for non-GET requests
     if (options.body && typeof options.body === 'object') {
       config.body = JSON.stringify(options.body);
     }
-
-    console.log(`API Request: ${endpoint}`, { 
-      token: !!token,
-      method: config.method,
-      body: config.body 
-    });
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     
@@ -71,6 +84,7 @@ export const authAPI = {
   getUsers: () => apiRequest('/auth/users'),
 };
 
+// Upload API calls
 export const uploadAPI = {
   // Get signed URL for video upload
   getSignedUrl: (uploadData) =>
@@ -86,14 +100,19 @@ export const uploadAPI = {
       body: confirmData,
     }),
 
-  // Get signed URL for video streaming
-  getStreamUrl: (lessonId) =>
-  apiRequest(`/upload/stream/${lessonId}`, {
-    headers: {
-      'Cache-Control': 'no-cache'
+  // Get signed URL for video streaming - FIXED
+  getStreamUrl: async (lessonId) => {
+    // Validate lessonId
+    if (!lessonId || lessonId === 'undefined' || lessonId === 'null') {
+      throw new Error('Invalid lesson ID');
     }
-  }),
+    
+    // Use apiRequest which handles token automatically
+    return apiRequest(`/upload/stream/${lessonId}`);
+  },
   
+  // Test storage access
+  testStorage: () => apiRequest('/upload/test-storage'),
 };
 
 // Course API calls
@@ -127,7 +146,8 @@ export const coursesAPI = {
   // Get instructor's courses
   getMyCourses: () => apiRequest('/courses/instructor/my-courses'),
 
-   createLesson: (courseId, lessonData) =>
+  // Lesson management
+  createLesson: (courseId, lessonData) =>
     apiRequest(`/courses/${courseId}/lessons`, {
       method: 'POST',
       body: lessonData,
@@ -145,15 +165,7 @@ export const coursesAPI = {
     }),
 };
 
-export const formatCoursePrice = (price) => {
-  if (price === 0) return 'Free';
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-  }).format(price);
-};
-
+// Enrollment API calls
 export const enrollmentsAPI = {
   // Enroll in a course
   enroll: (courseId) => 
@@ -169,7 +181,15 @@ export const enrollmentsAPI = {
   checkEnrollment: (courseId) => apiRequest(`/enrollments/check/${courseId}`),
 };
 
-
-
-
+// Health check
 export const healthCheck = () => apiRequest('/health');
+
+// Currency formatting (keep existing)
+export const formatCoursePrice = (price) => {
+  if (price === 0) return 'Free';
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(price);
+};

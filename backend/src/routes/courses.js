@@ -1,7 +1,7 @@
 import express from 'express';
 import { supabase, supabaseService } from '../config/supabaseClient.js';
 import { authenticateToken } from '../middleware/auth.js';
-
+import { requireInstructor } from '../middleware/roles.js'; 
 const router = express.Router();
 
 // GET /api/courses - Get all published courses (public)
@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/courses/:id - Get single course by ID (public if published, private for instructors)
+// Ensure this route includes video data for enrolled students
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -53,7 +53,11 @@ router.get('/:id', async (req, res) => {
           description,
           duration_minutes,
           order_index,
-          video_url
+          video_path,
+          video_url,
+          video_size,
+          video_duration,
+          upload_status
         )
       `)
       .eq('id', id)
@@ -86,7 +90,8 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/courses - Create new course (instructors only)
-router.post('/', authenticateToken, async (req, res) => {
+// POST /api/courses - Create new course (instructors only)
+router.post('/', authenticateToken, requireInstructor, async (req, res) => { // ADD requireInstructor
   try {
     const { title, description, price, level, thumbnail_url } = req.body;
     const instructor_id = req.user.id;
@@ -96,18 +101,7 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Title and description are required' });
     }
 
-    // Check if user is instructor or admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', instructor_id)
-      .single();
-
-    if (profileError || !['instructor', 'admin'].includes(profile?.role)) {
-      return res.status(403).json({ error: 'Instructor access required' });
-    }
-
-    // Create course
+    // Create course (user is already verified as instructor by middleware)
     const { data: course, error } = await supabase
       .from('courses')
       .insert([
@@ -146,8 +140,7 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/courses/:id - Update course (instructor only)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireInstructor, async (req, res) => { // ADD requireInstructor
   try {
     const { id } = req.params;
     const { title, description, price, level, thumbnail_url, is_published } = req.body;
@@ -206,8 +199,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+
 // DELETE /api/courses/:id - Delete course (instructor only)
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireInstructor, async (req, res) => { // ADD requireInstructor
   try {
     const { id } = req.params;
     const user_id = req.user.id;
@@ -227,7 +221,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Access denied. You can only delete your own courses.' });
     }
 
-    // Delete course (cascade will delete lessons, enrollments, etc.)
+    // Delete course
     const { error } = await supabase
       .from('courses')
       .delete()
@@ -246,7 +240,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // GET /api/courses/instructor/my-courses - Get instructor's courses
-router.get('/instructor/my-courses', authenticateToken, async (req, res) => {
+router.get('/instructor/my-courses', authenticateToken, requireInstructor, async (req, res) => { // ADD requireInstructor
   try {
     const instructor_id = req.user.id;
 
@@ -259,7 +253,18 @@ router.get('/instructor/my-courses', authenticateToken, async (req, res) => {
           full_name,
           username
         ),
-        lessons (id),
+        lessons (
+          id,
+          title,
+          description,
+          duration_minutes,
+          order_index,
+          video_path,
+          video_url,
+          video_size,
+          video_duration,
+          upload_status
+        ),
         enrollments (id)
       `)
       .eq('instructor_id', instructor_id)
@@ -282,13 +287,13 @@ router.get('/instructor/my-courses', authenticateToken, async (req, res) => {
     console.error('Instructor courses fetch error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}); 
 
 
 // Add these routes to the existing courses.js file
 
 // POST /api/courses/:courseId/lessons - Create new lesson
-router.post('/:courseId/lessons', authenticateToken, async (req, res) => {
+router.post('/:courseId/lessons', authenticateToken, requireInstructor, async (req, res) => {
   try {
     const { courseId } = req.params;
     const { title, description, duration_minutes, order_index } = req.body;
@@ -344,7 +349,7 @@ router.post('/:courseId/lessons', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/courses/lessons/:lessonId - Update lesson
-router.put('/lessons/:lessonId', authenticateToken, async (req, res) => {
+router.put('/lessons/:lessonId', authenticateToken,requireInstructor, async (req, res) => {
   try {
     const { lessonId } = req.params;
     const { title, description, duration_minutes, order_index } = req.body;
@@ -398,7 +403,7 @@ router.put('/lessons/:lessonId', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/courses/lessons/:lessonId - Delete lesson
-router.delete('/lessons/:lessonId', authenticateToken, async (req, res) => {
+router.delete('/lessons/:lessonId', authenticateToken,requireInstructor, async (req, res) => {
   try {
     const { lessonId } = req.params;
     const user_id = req.user.id;

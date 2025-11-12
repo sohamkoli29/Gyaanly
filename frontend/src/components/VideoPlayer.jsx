@@ -1,7 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { uploadAPI } from '../services/api';
-
-export default function VideoPlayer({ lessonId, videoPath, className = '', autoPlay = false }) {
+import { progressAPI } from '../services/api'; 
+export default function VideoPlayer({ 
+  lessonId, 
+  videoPath, 
+  className = '', 
+  autoPlay = false,
+  lessons = [], // Array of all lessons in the course
+  currentLessonIndex = 0, // Current lesson index in the array
+  onLessonChange ,// Callback when user changes lesson
+    courseId, // Add courseId prop
+  onProgressUpdate // Callback when progress changes
+}) {
   const [signedUrl, setSignedUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,11 +24,21 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
   const [showControls, setShowControls] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
-  
+  const [showLessonList, setShowLessonList] = useState(false);
+    const [lessonProgress, setLessonProgress] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
   const progressBarRef = useRef(null);
+  const lessonListRef = useRef(null);
+
+  // Navigation states
+  const hasPreviousLesson = currentLessonIndex > 0;
+  const hasNextLesson = currentLessonIndex < lessons.length - 1;
+  const currentLesson = lessons[currentLessonIndex];
 
   useEffect(() => {
     // Validate props before fetching
@@ -40,32 +60,42 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
     fetchSignedUrl();
   }, [lessonId, videoPath]);
 
+  // Close lesson list when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (lessonListRef.current && !lessonListRef.current.contains(event.target)) {
+        setShowLessonList(false);
+      }
+    };
+
+    if (showLessonList) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showLessonList]);
+
   // Save progress periodically
   useEffect(() => {
-    if (currentTime > 0 && duration > 0) {
-      const progressPercent = (currentTime / duration) * 100;
-      // Save to localStorage or backend
-      localStorage.setItem(`lesson_${lessonId}_progress`, JSON.stringify({
-        time: currentTime,
-        percent: progressPercent,
-        lastWatched: new Date().toISOString()
-      }));
-    }
-  }, [currentTime, duration, lessonId]);
+    if (duration > 0 && currentTime > 0) {
+      const newProgress = Math.round((currentTime / duration) * 100);
+      setLessonProgress(newProgress);
 
-  // Load saved progress
-  useEffect(() => {
-    if (videoRef.current && duration > 0) {
-      const saved = localStorage.getItem(`lesson_${lessonId}_progress`);
-      if (saved) {
-        const { time } = JSON.parse(saved);
-        if (time > 0 && time < duration - 10) { // Don't resume if < 10s remaining
-          videoRef.current.currentTime = time;
-        }
+      // Mark as completed if watched 95% or more
+      if (newProgress >= 95 && !isCompleted) {
+        setIsCompleted(true);
+        updateProgress(newProgress, true);
+      } else if (newProgress > 0) {
+        updateProgress(newProgress, false);
       }
     }
-  }, [lessonId, duration]);
+  }, [currentTime, duration]);
 
+  // Load saved progress
+ useEffect(() => {
+    if (courseId && lessonId) {
+      loadProgress();
+    }
+  }, [courseId, lessonId]);
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -79,11 +109,19 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          seek(-10);
+          if (e.ctrlKey || e.metaKey) {
+            handlePreviousLesson();
+          } else {
+            seek(-10);
+          }
           break;
         case 'ArrowRight':
           e.preventDefault();
-          seek(10);
+          if (e.ctrlKey || e.metaKey) {
+            handleNextLesson();
+          } else {
+            seek(10);
+          }
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -100,6 +138,10 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
         case 'f':
           e.preventDefault();
           toggleFullscreen();
+          break;
+        case 'l':
+          e.preventDefault();
+          setShowLessonList(prev => !prev);
           break;
         case '0':
         case '1':
@@ -120,7 +162,7 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [duration]);
+  }, [duration, hasPreviousLesson, hasNextLesson]);
 
   // Auto-hide controls
   useEffect(() => {
@@ -149,7 +191,6 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
       setLoading(true);
       setError('');
       
-      // Validate lessonId before making API call
       if (!lessonId || lessonId === 'undefined') {
         throw new Error('Invalid lesson ID');
       }
@@ -167,7 +208,6 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
       console.error('Error fetching signed URL:', err);
       const errorMessage = err.message || 'Unknown error';
       
-      // Provide more user-friendly messages
       if (errorMessage.includes('Access token required') || errorMessage.includes('401')) {
         setError('Please log in to watch this video');
       } else if (errorMessage.includes('Invalid lesson ID')) {
@@ -244,11 +284,29 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
       
-      // Update buffered
       const bufferedEnd = videoRef.current.buffered.length > 0 
         ? videoRef.current.buffered.end(videoRef.current.buffered.length - 1)
         : 0;
       setBuffered((bufferedEnd / duration) * 100);
+    }
+  };
+
+  const handlePreviousLesson = () => {
+    if (hasPreviousLesson && onLessonChange) {
+      onLessonChange(currentLessonIndex - 1);
+    }
+  };
+
+  const handleNextLesson = () => {
+    if (hasNextLesson && onLessonChange) {
+      onLessonChange(currentLessonIndex + 1);
+    }
+  };
+
+  const handleLessonSelect = (index) => {
+    if (onLessonChange) {
+      onLessonChange(index);
+      setShowLessonList(false);
     }
   };
 
@@ -257,6 +315,13 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDuration = (minutes) => {
+    if (!minutes) return '0 min';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
   const handleVideoError = (e) => {
@@ -291,7 +356,126 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
     
     setError(errorMessage);
   };
+// Replace the updateProgress
+const updateProgress = async (progress, completed = false) => {
+  try {
+    if (!courseId || !lessonId) {
+      console.log('Missing courseId or lessonId for progress update');
+      return;
+    }
 
+    // Only update if progress changed significantly (to avoid too many API calls)
+    const progressChanged = Math.abs(progress - lessonProgress) >= 5;
+    const completionChanged = completed !== isCompleted;
+    
+    if (!progressChanged && !completionChanged) {
+      return;
+    }
+
+    console.log('Updating progress:', { 
+      progress, 
+      completed, 
+      previousProgress: lessonProgress,
+      previousCompleted: isCompleted 
+    });
+
+    await progressAPI.updateProgress({
+      course_id: courseId,
+      lesson_id: lessonId,
+      progress_percent: progress,
+      completed: completed
+    });
+
+    // Update local state immediately for better UX
+    setLessonProgress(progress);
+    setIsCompleted(completed);
+
+    // Notify parent component
+    if (onProgressUpdate) {
+      onProgressUpdate({
+        lessonId,
+        progress,
+        completed,
+        courseId
+      });
+    }
+
+    console.log('Progress updated successfully:', { progress, completed });
+  } catch (error) {
+    console.error('Error updating progress:', error);
+    // Don't break the video player if progress tracking fails
+  }
+};
+
+// Also update the useEffect that calls updateProgress:
+useEffect(() => {
+  if (duration > 0 && currentTime > 0) {
+    const newProgress = Math.round((currentTime / duration) * 100);
+    
+    // Only update if progress actually changed
+    if (newProgress !== lessonProgress) {
+      setLessonProgress(newProgress);
+
+      // Mark as completed if watched 95% or more
+      const shouldComplete = newProgress >= 95 && !isCompleted;
+      
+      if (shouldComplete || newProgress > 0) {
+        updateProgress(newProgress, shouldComplete || isCompleted);
+      }
+    }
+  }
+}, [currentTime, duration]);
+const loadProgress = async () => {
+  try {
+    if (!courseId) {
+      console.log('No courseId provided for progress tracking');
+      return;
+    }
+
+    const progressData = await progressAPI.getCourseProgress(courseId);
+    const lessonProgress = progressData.lessonProgress?.find(
+      lp => lp.lesson_id === lessonId
+    );
+    
+    if (lessonProgress) {
+      setLessonProgress(lessonProgress.progress_percent);
+      setIsCompleted(lessonProgress.completed);
+      
+      console.log('Loaded progress:', {
+        progress: lessonProgress.progress_percent,
+        completed: lessonProgress.completed
+      });
+
+      // Resume from saved position if not completed
+      if (videoRef.current && lessonProgress.progress_percent > 0 && !lessonProgress.completed) {
+        const resumeTime = (lessonProgress.progress_percent / 100) * duration;
+        if (resumeTime < duration - 10) { // Don't resume if < 10s remaining
+          videoRef.current.currentTime = resumeTime;
+          console.log('Resumed from:', resumeTime, 'seconds');
+        }
+      }
+    } else {
+      console.log('No progress found for this lesson');
+      // Initialize with default values
+      setLessonProgress(0);
+      setIsCompleted(false);
+    }
+  } catch (error) {
+    console.error('Error loading progress:', error);
+    // Initialize with default values on error
+    setLessonProgress(0);
+    setIsCompleted(false);
+  }
+};
+
+
+    const renderProgressIndicator = () => (
+    <div className="absolute top-2 left-2 z-10">
+      <div className="bg-black bg-opacity-75 rounded-full px-3 py-1 text-white text-xs font-medium">
+        {isCompleted ? '✅ Completed' : `${lessonProgress}% Watched`}
+      </div>
+    </div>
+  );
   const handleRetry = () => {
     setError('');
     setLoading(true);
@@ -300,8 +484,11 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
 
   if (loading) {
     return (
+      
       <div className={`bg-gray-900 flex items-center justify-center rounded-lg ${className}`}>
+        
         <div className="text-white text-center p-8">
+
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
           <p className="text-lg font-medium">Loading video...</p>
           <p className="text-sm text-gray-400 mt-2">Please wait</p>
@@ -348,6 +535,36 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => playing && setShowControls(false)}
     >
+      {renderProgressIndicator()}
+      {/* Lesson Navigation Overlay */}
+      <div className="absolute inset-0 flex items-center justify-between z-10 pointer-events-none">
+        {/* Previous Lesson Arrow */}
+        {hasPreviousLesson && (
+          <button
+            onClick={handlePreviousLesson}
+            className="pointer-events-auto ml-4 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-3 rounded-full transition-all transform hover:scale-110 opacity-0 group-hover:opacity-100"
+            title="Previous Lesson (Ctrl+←)"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Next Lesson Arrow */}
+        {hasNextLesson && (
+          <button
+            onClick={handleNextLesson}
+            className="pointer-events-auto mr-4 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-3 rounded-full transition-all transform hover:scale-110 opacity-0 group-hover:opacity-100"
+            title="Next Lesson (Ctrl+→)"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+      </div>
+
       <video
         ref={videoRef}
         className="w-full h-full"
@@ -357,7 +574,13 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
         onTimeUpdate={handleTimeUpdate}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
+        onEnded={() => {
+          setPlaying(false);
+          // Auto-advance to next lesson when video ends
+          if (hasNextLesson && onLessonChange) {
+            setTimeout(() => handleNextLesson(), 2000);
+          }
+        }}
         autoPlay={autoPlay}
         preload="metadata"
       />
@@ -368,13 +591,85 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
         onClick={togglePlay}
       >
         {!playing && (
-          <div className="bg-black bg-opacity-50 rounded-full p-6 transition-transform hover:scale-110">
-            <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <div className="bg-black bg-opacity-50 rounded-full p-4 md:p-6 transition-transform hover:scale-110">
+            <svg className="w-12 h-12 md:w-16 md:h-16 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
             </svg>
           </div>
         )}
       </div>
+
+      {/* Lesson List Dropdown */}
+      {lessons.length > 0 && (
+        <div ref={lessonListRef} className="absolute top-4 left-4 z-20">
+          <button
+            onClick={() => setShowLessonList(!showLessonList)}
+            className="bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all flex items-center space-x-2"
+            title="Lesson List (L)"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="hidden sm:inline">Lessons</span>
+            <span className="text-sm opacity-75">({currentLessonIndex + 1}/{lessons.length})</span>
+          </button>
+
+          {showLessonList && (
+            <div className="absolute top-full left-0 mt-2 w-80 max-h-96 overflow-y-auto bg-gray-900 rounded-lg shadow-xl z-30">
+              <div className="p-4">
+                <h3 className="text-white font-semibold mb-3">Course Lessons</h3>
+                <div className="space-y-2">
+                  {lessons.map((lesson, index) => (
+                    <button
+                      key={lesson.id}
+                      onClick={() => handleLessonSelect(index)}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${
+                        index === currentLessonIndex
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                            index === currentLessonIndex
+                              ? 'bg-white text-blue-600'
+                              : 'bg-gray-700 text-gray-300'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{lesson.title}</p>
+                            <p className="text-sm opacity-75 truncate">
+                              {formatDuration(lesson.duration_minutes)}
+                              {lesson.video_path && ' • 🎬'}
+                            </p>
+                          </div>
+                        </div>
+                        {index === currentLessonIndex && (
+                          <div className="flex-shrink-0">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Current Lesson Info */}
+      {currentLesson && (
+        <div className="absolute top-4 right-4 bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg max-w-xs">
+          <p className="font-medium text-sm truncate">{currentLesson.title}</p>
+          <p className="text-xs opacity-75">
+            Lesson {currentLessonIndex + 1} of {lessons.length}
+          </p>
+        </div>
+      )}
 
       {/* Custom Controls */}
       <div 
@@ -383,18 +678,16 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
         }`}
       >
         {/* Progress Bar */}
-        <div className="px-4 pt-2">
+        <div className="px-3 md:px-4 pt-2">
           <div 
             ref={progressBarRef}
             className="h-1.5 bg-gray-600 rounded-full cursor-pointer hover:h-2 transition-all group/progress"
             onClick={handleProgressBarClick}
           >
-            {/* Buffered */}
             <div 
-              className="absolute h-full bg-gray-500 rounded-full"
+              className="absolute bg-gray-500 rounded-full"
               style={{ width: `${buffered}%` }}
             />
-            {/* Progress */}
             <div 
               className="relative h-full bg-blue-600 rounded-full"
               style={{ width: `${(currentTime / duration) * 100}%` }}
@@ -405,21 +698,21 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3">
           {/* Left Controls */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3 flex-1">
             {/* Play/Pause */}
             <button
               onClick={togglePlay}
-              className="text-white hover:text-blue-400 transition-colors"
+              className="text-white hover:text-blue-400 transition-colors flex-shrink-0"
               title={playing ? 'Pause (K)' : 'Play (K)'}
             >
               {playing ? (
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
               ) : (
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                 </svg>
               )}
@@ -428,19 +721,19 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
             {/* Skip buttons */}
             <button
               onClick={() => seek(-10)}
-              className="text-white hover:text-blue-400 transition-colors"
+              className="text-white hover:text-blue-400 transition-colors hidden sm:block"
               title="Rewind 10s (←)"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
               </svg>
             </button>
             <button
               onClick={() => seek(10)}
-              className="text-white hover:text-blue-400 transition-colors"
+              className="text-white hover:text-blue-400 transition-colors hidden sm:block"
               title="Forward 10s (→)"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
               </svg>
             </button>
@@ -453,16 +746,16 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
                 title={muted ? 'Unmute (M)' : 'Mute (M)'}
               >
                 {muted || volume === 0 ? (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                   </svg>
                 ) : volume < 0.5 ? (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   </svg>
                 ) : (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   </svg>
                 )}
@@ -484,24 +777,29 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
                     }
                   }
                 }}
-                className="w-0 group-hover/volume:w-20 transition-all duration-300 accent-blue-600"
+                className="w-0 md:group-hover/volume:w-16 lg:group-hover/volume:w-20 transition-all duration-300 accent-blue-600"
               />
             </div>
 
             {/* Time */}
-            <div className="text-white text-sm font-medium">
-              {formatTime(currentTime)} / {formatTime(duration)}
+            <div className="text-white text-sm font-medium flex-shrink-0">
+              <span className="hidden xs:inline">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+              <span className="xs:hidden">
+                {formatTime(currentTime)}
+              </span>
             </div>
           </div>
 
           {/* Right Controls */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
             {/* Playback Speed */}
             <div className="relative group/speed">
               <button className="text-white hover:text-blue-400 transition-colors text-sm font-medium px-2 py-1 rounded bg-white/10 hover:bg-white/20">
                 {playbackRate}x
               </button>
-              <div className="absolute bottom-full right-0 mb-2 bg-gray-900 rounded-lg shadow-xl py-2 opacity-0 group-hover/speed:opacity-100 transition-opacity pointer-events-none group-hover/speed:pointer-events-auto">
+              <div className="absolute bottom-full right-0 mb-2 bg-gray-900 rounded-lg shadow-xl py-2 opacity-0 group-hover/speed:opacity-100 transition-opacity pointer-events-none group-hover/speed:pointer-events-auto min-w-32">
                 {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(rate => (
                   <button
                     key={rate}
@@ -523,29 +821,70 @@ export default function VideoPlayer({ lessonId, videoPath, className = '', autoP
               title="Fullscreen (F)"
             >
               {fullscreen ? (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                 </svg>
               )}
             </button>
           </div>
         </div>
+
+        {/* Lesson Navigation for Small Screens */}
+        {lessons.length > 0 && (
+          <div className="flex items-center justify-between px-3 md:px-4 pb-2 md:hidden">
+            <button
+              onClick={handlePreviousLesson}
+              disabled={!hasPreviousLesson}
+              className={`flex items-center space-x-1 px-3 py-1 rounded text-sm ${
+                hasPreviousLesson
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Previous</span>
+            </button>
+
+            <span className="text-white text-sm">
+              {currentLessonIndex + 1} / {lessons.length}
+            </span>
+
+            <button
+              onClick={handleNextLesson}
+              disabled={!hasNextLesson}
+              className={`flex items-center space-x-1 px-3 py-1 rounded text-sm ${
+                hasNextLesson
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <span>Next</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Keyboard Shortcuts Help */}
-      <div className={`absolute top-4 right-4 bg-black bg-opacity-75 rounded-lg p-3 text-white text-xs transition-opacity duration-300 ${
+      <div className={`absolute top-16 right-4 bg-black bg-opacity-75 rounded-lg p-3 text-white text-xs transition-opacity duration-300 hidden lg:block ${
         showControls ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'
       }`}>
         <p className="font-semibold mb-1">Keyboard Shortcuts</p>
         <p>Space/K - Play/Pause</p>
         <p>← → - Skip 10s</p>
+        <p>Ctrl+← → - Navigate lessons</p>
         <p>↑ ↓ - Volume</p>
         <p>M - Mute</p>
         <p>F - Fullscreen</p>
+        <p>L - Lesson list</p>
         <p>0-9 - Jump to %</p>
       </div>
     </div>

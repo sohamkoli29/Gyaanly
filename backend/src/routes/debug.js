@@ -32,5 +32,36 @@ router.get('/storage', authenticateToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// Debug route to check lesson video data
+router.get('/lessons/:courseId', authenticateToken, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    const { data: lessons, error } = await supabase
+      .from('lessons')
+      .select('*')
+      .eq('course_id', courseId)
+      .order('order_index', { ascending: true });
 
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({
+      courseId,
+      lessonsCount: lessons.length,
+      lessonsWithVideo: lessons.filter(l => l.video_path).length,
+      lessons: lessons.map(lesson => ({
+        id: lesson.id,
+        title: lesson.title,
+        video_path: lesson.video_path,
+        video_url: lesson.video_url,
+        upload_status: lesson.upload_status,
+        created_at: lesson.created_at
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 export default router;

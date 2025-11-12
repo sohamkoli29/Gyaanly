@@ -20,12 +20,12 @@ export default function Signup() {
     })
   }
 
+// In the handleSignup function, update the profile creation:
 const handleSignup = async (e) => {
   e.preventDefault();
   setLoading(true);
   setError('');
 
-  // Check if passwords match
   if (formData.password !== formData.confirmPassword) {
     setError("Passwords don't match");
     setLoading(false);
@@ -33,7 +33,6 @@ const handleSignup = async (e) => {
   }
 
   try {
-    // Create user with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
@@ -47,43 +46,35 @@ const handleSignup = async (e) => {
     if (authError) throw authError;
 
     if (authData.user) {
-      console.log('User created, attempting to create profile...');
+      console.log('User created, setting role as student...');
       
-      // Try to create profile via backend API
-      try {
-        // Sign in immediately to get token
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
+      // Sign in immediately to get token
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-        if (signInError) throw signInError;
+      if (signInError) throw signInError;
 
-        // Create profile using backend API
-        const profileData = {
-          full_name: formData.fullName,
-          username: formData.email.split('@')[0],
-          avatar_url: ''
-        };
+      // Create profile with student role
+      const profileData = {
+        full_name: formData.fullName,
+        username: formData.email.split('@')[0],
+        avatar_url: '',
+        role: 'student' // Default role
+      };
 
-        // This will trigger profile creation in backend
-        await fetch('http://localhost:5000/api/auth/profile', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${signInData.session.access_token}`
-          },
-          body: JSON.stringify(profileData)
-        });
+      await fetch('http://localhost:5000/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${signInData.session.access_token}`
+        },
+        body: JSON.stringify(profileData)
+      });
 
-        console.log('Profile creation attempted via backend');
-        
-      } catch (profileError) {
-        console.log('Profile creation may have failed, but user can create it later:', profileError);
-      }
-
-      // Show success message
-      alert('Account created successfully! You can now login and complete your profile.');
+      console.log('Profile created with student role');
+      alert('Account created successfully! You can now login.');
       navigate('/login');
     }
   } catch (error) {

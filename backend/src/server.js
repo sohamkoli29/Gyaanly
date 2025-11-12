@@ -8,6 +8,8 @@ import courseRoutes from './routes/courses.js';
 import enrollmentRoutes from './routes/enrollments.js';
 import uploadRoutes from './routes/upload.js';
 import debugRoutes from './routes/debug.js';
+import quizRoutes from './routes/quizzes.js';
+
 
 dotenv.config();
 
@@ -77,7 +79,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes); // Upload routes (all require auth)
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/quizzes', quizRoutes);
 app.use('/api/debug', debugRoutes);
+
 
 // 404 handler - must be after all routes
 app.use('*', (req, res) => {

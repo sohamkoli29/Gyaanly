@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { coursesAPI } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 import LessonManager from '../components/LessonManager';
 import VideoPlayer from '../components/VideoPlayer';
 import { formatCurrency } from '../utils/currency';
 import VideoDebugger from '../components/VideoDebugger';
-
 
 export default function InstructorDashboard() {
   const [courses, setCourses] = useState([]);
@@ -30,7 +29,24 @@ export default function InstructorDashboard() {
   const fetchCourses = async () => {
     try {
       const data = await coursesAPI.getMyCourses();
-      setCourses(data.courses || []);
+      
+      // For each course, fetch detailed lesson data including videos
+      const coursesWithLessons = await Promise.all(
+        (data.courses || []).map(async (course) => {
+          try {
+            const courseDetail = await coursesAPI.getCourse(course.id);
+            return {
+              ...course,
+              lessons: courseDetail.course?.lessons || []
+            };
+          } catch (error) {
+            console.error(`Error fetching lessons for course ${course.id}:`, error);
+            return { ...course, lessons: [] };
+          }
+        })
+      );
+      
+      setCourses(coursesWithLessons);
     } catch (error) {
       console.error('Error fetching courses:', error);
       setError('Failed to load courses');
@@ -87,6 +103,23 @@ export default function InstructorDashboard() {
       }
     } catch (error) {
       setError('Failed to delete course: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // FIXED: This function was causing the error
+  const handleCourseSelect = async (course) => {
+    setSelectedCourse(null); // Clear previous selection first
+    setLoading(true);
+    
+    try {
+      // Fetch fresh course data with lessons
+      const courseDetail = await coursesAPI.getCourse(course.id);
+      setSelectedCourse(courseDetail.course);
+    } catch (error) {
+      console.error('Error fetching course details:', error);
+      setError('Failed to load course details');
     } finally {
       setLoading(false);
     }
@@ -167,7 +200,7 @@ export default function InstructorDashboard() {
                     ? 'border-blue-500 bg-blue-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
-                onClick={() => setSelectedCourse(course)}
+                onClick={() => handleCourseSelect(course)}
               >
                 <h3 className="font-semibold text-gray-900 mb-2">{course.title}</h3>
                 <div className="flex justify-between text-sm text-gray-600">
@@ -199,6 +232,14 @@ export default function InstructorDashboard() {
                     >
                       Delete
                     </button>
+                    {/* Add Quiz Management Link */}
+                    <Link
+                      to={`/courses/${course.id}/quiz-management`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-purple-600 hover:text-purple-700 text-sm"
+                    >
+                      Quiz
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -238,13 +279,13 @@ export default function InstructorDashboard() {
                 </button>
               </div>
 
-              {/* VIDEO PREVIEW SECTION - FIXED */}
+              {/* VIDEO PREVIEW SECTION */}
               <div className="mb-8 bg-gray-50 rounded-lg p-6">
                 <h3 className="text-xl font-semibold mb-4">Course Video Preview</h3>
                 {selectedCourse.lessons && selectedCourse.lessons.length > 0 ? (
                   <div className="space-y-4">
                     {selectedCourse.lessons
-                      .filter(lesson => lesson.video_path) // Only show lessons with videos
+                      .filter(lesson => lesson.video_path)
                       .sort((a, b) => a.order_index - b.order_index)
                       .map((lesson, index) => (
                         <div key={lesson.id} className="bg-white rounded-lg border border-gray-200 p-4">
@@ -255,10 +296,15 @@ export default function InstructorDashboard() {
                             <p className="text-gray-600 text-sm mb-3">{lesson.description}</p>
                           )}
                           <div className="bg-black rounded-lg overflow-hidden">
-                            {/* FIXED: Passing lessonId and videoPath correctly */}
                             <VideoPlayer
                               lessonId={lesson.id}
                               videoPath={lesson.video_path}
+                              lessons={selectedCourse.lessons}
+                              currentLessonIndex={selectedCourse.lessons.findIndex(l => l.id === lesson.id)}
+                              onLessonChange={(newIndex) => {
+                                const newLesson = selectedCourse.lessons[newIndex];
+                                // Handle lesson change if needed
+                              }}
                               className="w-full h-64"
                             />
                           </div>
@@ -293,14 +339,13 @@ export default function InstructorDashboard() {
                 )}
               </div>
 
+              {selectedCourse && (
+                <VideoDebugger 
+                  courseId={selectedCourse.id}
+                  lessons={selectedCourse.lessons || []}
+                />
+              )}
 
-
-                  {selectedCourse && (
-  <VideoDebugger 
-    courseId={selectedCourse.id}
-    lessons={selectedCourse.lessons || []}
-  />
-  )}
               {/* LESSON MANAGER */}
               <LessonManager
                 courseId={selectedCourse.id}
@@ -335,7 +380,7 @@ export default function InstructorDashboard() {
   );
 }
 
-// Course Form Component
+// Course Form Component (keep your existing CourseForm component)
 function CourseForm({ course, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
     title: course?.title || '',

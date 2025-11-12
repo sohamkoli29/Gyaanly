@@ -4,28 +4,55 @@ import { supabase } from '../services/supabaseClient'
 
 export default function Navbar() {
   const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null) // ADD THIS LINE
   const navigate = useNavigate()
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      }
     })
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
+        setProfile(null)
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
+  const fetchProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single()
+      
+      if (!error && data) {
+        setProfile(data)
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    }
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate('/')
   }
+
+  const isInstructor = profile?.role === 'instructor' || profile?.role === 'admin'
 
   return (
     <nav className="bg-white shadow-lg border-b">
@@ -43,25 +70,28 @@ export default function Navbar() {
               Courses
             </Link>
             
-      {user ? (
-  <div className="flex items-center space-x-4">
-    <Link to="/instructor/dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
-      Instructor
-    </Link>
-    <Link to="/my-courses" className="text-gray-600 hover:text-blue-600 transition-colors">
-      My Courses
-    </Link>
-    <Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">
-      Profile
-    </Link>
-    <button 
-      onClick={handleLogout}
-      className="text-gray-600 hover:text-blue-600 transition-colors"
-    >
-      Logout
-    </button>
-  </div>
-) : (
+            {user ? (
+              <div className="flex items-center space-x-4">
+                {/* Only show Instructor link for instructors/admins */}
+                {isInstructor && (
+                  <Link to="/instructor/dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
+                    Instructor
+                  </Link>
+                )}
+                <Link to="/my-courses" className="text-gray-600 hover:text-blue-600 transition-colors">
+                  My Courses
+                </Link>
+                <Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">
+                  Profile
+                </Link>
+                <button 
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-blue-600 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
               <>
                 <Link to="/login" className="text-gray-600 hover:text-blue-600 transition-colors">
                   Login

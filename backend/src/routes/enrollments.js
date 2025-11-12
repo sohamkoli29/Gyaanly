@@ -76,7 +76,7 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/enrollments/my-courses - Get user's enrolled courses
+// Update the GET /api/enrollments/my-courses route
 router.get('/my-courses', authenticateToken, async (req, res) => {
   try {
     const user_id = req.user.id;
@@ -97,6 +97,16 @@ router.get('/my-courses', authenticateToken, async (req, res) => {
           rating,
           profiles:instructor_id (
             full_name
+          ),
+          lessons (
+            id,
+            title,
+            description,
+            duration_minutes,
+            order_index,
+            video_path,
+            video_url,
+            upload_status
           )
         )
       `)
@@ -139,5 +149,247 @@ router.get('/check/:courseId', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+// POST /api/enrollments/progress - Update lesson progress
+router.post('/progress', authenticateToken, async (req, res) => {
+  try {
+    const { course_id, lesson_id, progress_percent, completed } = req.body;
+    const user_id = req.user.id;
 
+    console.log('Updating progress:', { course_id, lesson_id, progress_percent, completed, user_id });
+
+    if (!course_id || !lesson_id) {
+      return res.status(400).json({ error: 'Course ID and Lesson ID are required' });
+    }
+
+    // Check if enrollment exists
+    const { data: enrollment, error: enrollmentError } = await supabase
+      .from('enrollments')
+      .select('id')
+      .eq('user_id', user_id)
+      .eq('course_id', course_id)
+      .single();
+
+    if (enrollmentError || !enrollment) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
+
+    // Check if progress record already exists
+    const { data: existingProgress, error: checkError } = await supabase
+      .from('lesson_progress')
+      .select('*')
+      .eq('user_id', user_id)
+      .eq('lesson_id', lesson_id)
+      .single();
+
+    let progress;
+    
+    if (checkError && checkError.code === 'PGRST116') {
+      // No existing record - create new one
+      console.log('Creating new progress record');
+      const { data, error } = await supabase
+        .from('lesson_progress')
+        .insert({
+          user_id,
+          course_id,
+          lesson_id,
+          progress_percent: Math.min(100, Math.max(0, progress_percent || 0)),
+          completed: completed || false,
+          last_watched: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating progress:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      progress = data;
+    } else if (checkError) {
+      console.error('Error checking existing progress:', checkError);
+      return res.status(500).json({ error: checkError.message });
+    } else {
+      // Update existing record
+      console.log('Updating existing progress record');
+      const { data, error } = await supabase
+        .from('lesson_progress')
+        .update({
+          progress_percent: Math.min(100, Math.max(0, progress_percent || 0)),
+          completed: completed || false,
+          last_watched: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user_id)
+        .eq('lesson_id', lesson_id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating progress:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      progress = data;
+    }
+
+    // Calculate overall course progress
+    try {
+      await updateCourseProgress(user_id, course_id);
+    } catch (progressError) {
+      console.error('Error updating course progress:', progressError);
+      // Don't fail the request if course progress update fails
+    }
+
+    res.json({
+      message: 'Progress updated successfully',
+      progress
+    });
+  } catch (error) {
+    console.error('Progress tracking error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+// GET /api/enrollments/progress/:courseId - Get user progress for a course
+// GET /api/enrollments/progress/:courseId - Get user progress for a course
+router.get('/progress/:courseId', authenticateToken, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const user_id = req.user.id;
+
+    console.log('Fetching progress for course:', courseId, 'user:', user_id);
+
+    // Try to get lesson progress - handle case where table might not exist
+    let lessonProgress = [];
+    try {
+      const { data, error } = await supabase
+        .from('lesson_progress')
+        .select('*')
+        .eq('user_id', user_id)
+        .eq('course_id', courseId);
+
+      if (error) {
+        // If table doesn't exist, return empty progress
+        if (error.code === '42P01') { // table does not exist
+          console.log('Lesson progress table does not exist yet');
+          lessonProgress = [];
+        } else {
+          throw error;
+        }
+      } else {
+        lessonProgress = data || [];
+      }
+    } catch (tableError) {
+      console.log('Lesson progress table error:', tableError.message);
+      lessonProgress = [];
+    }
+
+    console.log('Lesson progress found:', lessonProgress.length);
+
+    // Get course enrollment
+    let enrollment = null;
+    try {
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select('progress_percent, completed_lessons, total_lessons')
+        .eq('user_id', user_id)
+        .eq('course_id', courseId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.log('Enrollment fetch error:', error);
+      } else {
+        enrollment = data;
+      }
+    } catch (enrollmentError) {
+      console.log('Enrollment error:', enrollmentError);
+    }
+
+    res.json({
+      lessonProgress: lessonProgress,
+      courseProgress: enrollment || {
+        progress_percent: 0,
+        completed_lessons: 0,
+        total_lessons: 0
+      }
+    });
+  } catch (error) {
+    console.error('Progress fetch error:', error);
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
+  }
+});
+// Helper function to update overall course progress
+// Helper function to update overall course progress
+async function updateCourseProgress(user_id, course_id) {
+  try {
+    // Get total lessons in course
+    const { data: lessons, error: lessonsError } = await supabase
+      .from('lessons')
+      .select('id')
+      .eq('course_id', course_id);
+
+    if (lessonsError) {
+      console.error('Error fetching lessons:', lessonsError);
+      return;
+    }
+
+    const totalLessons = lessons?.length || 0;
+
+    // Get completed lessons
+    const { data: completedLessons, error: progressError } = await supabase
+      .from('lesson_progress')
+      .select('lesson_id')
+      .eq('user_id', user_id)
+      .eq('course_id', course_id)
+      .eq('completed', true);
+
+    if (progressError) {
+      console.error('Error fetching completed lessons:', progressError);
+      return;
+    }
+
+    const completedLessonsCount = completedLessons?.length || 0;
+    const progressPercent = totalLessons > 0 ? Math.round((completedLessonsCount / totalLessons) * 100) : 0;
+
+    console.log('Updating course progress:', {
+      user_id,
+      course_id,
+      completedLessonsCount,
+      totalLessons,
+      progressPercent
+    });
+
+    // Update enrollment with progress - handle case where columns might not exist
+    try {
+      const { error: updateError } = await supabase
+        .from('enrollments')
+        .update({
+          progress_percent: progressPercent,
+          completed_lessons: completedLessonsCount,
+          total_lessons: totalLessons,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user_id)
+        .eq('course_id', course_id);
+
+      if (updateError) {
+        // If columns don't exist yet, just log the error but don't fail
+        if (updateError.code === '42703') {
+          console.log('Progress columns not available in enrollments table yet');
+        } else {
+          console.error('Error updating enrollment progress:', updateError);
+        }
+      } else {
+        console.log('Course progress updated successfully');
+      }
+    } catch (updateError) {
+      console.error('Enrollment update error:', updateError);
+    }
+
+    return { progressPercent, completedLessonsCount, totalLessons };
+  } catch (error) {
+    console.error('Course progress update error:', error);
+    throw error;
+  }
+}
 export default router;

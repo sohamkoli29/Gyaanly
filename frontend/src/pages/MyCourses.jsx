@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { enrollmentsAPI } from '../services/api';
 import { supabase } from '../services/supabaseClient';
-import VideoPlayer from '../components/VideoPlayer'; // ADD THIS IMPORT
+import VideoPlayer from '../components/VideoPlayer';
 import { formatCurrency } from '../utils/currency';
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [previewLesson, setPreviewLesson] = useState(null); // ADD STATE FOR PREVIEW
+  const [previewLesson, setPreviewLesson] = useState(null);
 
   useEffect(() => {
     checkAuth();
@@ -34,10 +34,12 @@ export default function MyCourses() {
     }
   };
 
-  // ADD FUNCTION TO SHOW VIDEO PREVIEW
   const showVideoPreview = (course) => {
-    // Find first lesson with video
-    const lessonWithVideo = course.lessons?.find(lesson => lesson.video_path);
+    // Find first lesson with video that's ready to stream
+    const lessonWithVideo = course.lessons?.find(lesson => 
+      lesson.video_path && lesson.upload_status === 'ready'
+    );
+    
     if (lessonWithVideo) {
       setPreviewLesson({
         courseTitle: course.title,
@@ -86,7 +88,7 @@ export default function MyCourses() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">My Courses</h1>
       
-      {/* ADD VIDEO PREVIEW MODAL */}
+      {/* VIDEO PREVIEW MODAL */}
       {previewLesson && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
@@ -132,8 +134,13 @@ export default function MyCourses() {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {enrollments.map((enrollment) => {
-            const hasVideos = enrollment.courses.lessons?.some(lesson => lesson.video_path);
-            const videoCount = enrollment.courses.lessons?.filter(lesson => lesson.video_path).length || 0;
+            // FIXED: Use the correct variable name 'enrollment' instead of 'enrollment'
+            const hasVideos = enrollment.courses.lessons?.some(lesson => 
+              lesson.video_path && lesson.upload_status === 'ready'
+            );
+            const videoCount = enrollment.courses.lessons?.filter(lesson => 
+              lesson.video_path && lesson.upload_status === 'ready'
+            ).length || 0;
             
             return (
               <div key={enrollment.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -145,7 +152,7 @@ export default function MyCourses() {
                       className="w-full h-full object-cover"
                     />
                   )}
-                  {/* ADD VIDEO BADGE */}
+                  {/* VIDEO BADGE */}
                   {hasVideos && (
                     <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">
                       {videoCount} video{videoCount !== 1 ? 's' : ''}
@@ -170,7 +177,7 @@ export default function MyCourses() {
                     )}
                   </div>
 
-                  {/* ADD PREVIEW BUTTON */}
+                  {/* PREVIEW BUTTON */}
                   {hasVideos && (
                     <button
                       onClick={() => showVideoPreview(enrollment.courses)}

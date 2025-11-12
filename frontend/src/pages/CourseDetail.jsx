@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { coursesAPI } from '../services/api';
+import { coursesAPI, progressAPI, quizAPI } from '../services/api'; 
 import { supabase } from '../services/supabaseClient';
 import { formatCurrency, formatPrice } from '../utils/currency';
 import VideoPlayer from '../components/VideoPlayer';
+
+import QuizModal from '../components/QuizModal';
 
 
 export default function CourseDetail() {
@@ -16,6 +18,36 @@ export default function CourseDetail() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [courseProgress, setCourseProgress] = useState({
+  progress_percent: 0,
+  completed_lessons: 0,
+  total_lessons: 0
+});
+const [lessonProgress, setLessonProgress] = useState([]);
+const [activeTab, setActiveTab] = useState('lessons');
+const [showQuizModal, setShowQuizModal] = useState(false);
+const [hasQuiz, setHasQuiz] = useState(false);
+
+const checkQuizExists = async () => {
+  try {
+    const response = await quizAPI.getQuizByCourse(id);
+    setHasQuiz(!!(response && response.quiz));
+  } catch (error) {
+    // "No quiz found" is expected when no quiz exists
+    if (error.message === 'NO_QUIZ_FOUND') {
+      setHasQuiz(false);
+    } else {
+      console.error('Error checking quiz:', error);
+      setHasQuiz(false);
+    }
+  }
+};
+
+useEffect(() => {
+  if (isEnrolled) {
+    checkQuizExists();
+  }
+}, [isEnrolled, id]);
 
   useEffect(() => {
     checkAuth();
@@ -45,6 +77,63 @@ export default function CourseDetail() {
       setLoading(false);
     }
   };
+  
+  const fetchProgress = async () => {
+  if (!user || !isEnrolled) return;
+  
+  try {
+    const progressData = await progressAPI.getCourseProgress(id);
+    setCourseProgress(progressData.courseProgress);
+    setLessonProgress(progressData.lessonProgress || []);
+  } catch (error) {
+    console.error('Error fetching progress:', error);
+  }
+};
+
+
+
+// Call fetchProgress when enrollment changes
+useEffect(() => {
+  if (isEnrolled) {
+    fetchProgress();
+  }
+}, [isEnrolled, id, user]);
+
+const handleProgressUpdate = (progressData) => {
+  // Update local state immediately for better UX
+  const updatedLessonProgress = [...lessonProgress];
+  const existingIndex = updatedLessonProgress.findIndex(
+    lp => lp.lesson_id === progressData.lessonId
+  );
+  
+  if (existingIndex >= 0) {
+    updatedLessonProgress[existingIndex] = {
+      ...updatedLessonProgress[existingIndex],
+      progress_percent: progressData.progress,
+      completed: progressData.completed
+    };
+  } else {
+    updatedLessonProgress.push({
+      lesson_id: progressData.lessonId,
+      progress_percent: progressData.progress,
+      completed: progressData.completed
+    });
+  }
+  
+  setLessonProgress(updatedLessonProgress);
+  
+  // Recalculate overall course progress
+  const completedLessons = updatedLessonProgress.filter(lp => lp.completed).length;
+  const totalLessons = course.lessons?.length || 0;
+  const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  
+  setCourseProgress({
+    progress_percent: overallProgress,
+    completed_lessons: completedLessons,
+    total_lessons: totalLessons
+  });
+};
+
 
   const checkEnrollment = async (userId) => {
     try {
@@ -190,28 +279,38 @@ export default function CourseDetail() {
           </div>
 
           {/* Video Player Section */}
-{/* Video Player Section */}
+
 <div className="mb-8">
   <div className="bg-gray-900 rounded-lg overflow-hidden shadow-lg">
-    {selectedLesson && selectedLesson.video_path ? (
-      <VideoPlayer
-        lessonId={selectedLesson.id}
-        videoPath={selectedLesson.video_path}
-        className="w-full h-64 lg:h-96"
-      />
-    ) : (
+{selectedLesson && selectedLesson.video_path ? (
+  <VideoPlayer
+    lessonId={selectedLesson.id}
+    videoPath={selectedLesson.video_path}
+    courseId={course.id}
+    onProgressUpdate={handleProgressUpdate}
+    lessons={course.lessons}
+    currentLessonIndex={course.lessons.findIndex(l => l.id === selectedLesson.id)}
+    onLessonChange={(newIndex) => {
+      const newLesson = course.lessons[newIndex];
+      setSelectedLesson(newLesson);
+    }}
+    className="w-full h-64 lg:h-96"
+  />
+) : (
       <div className="w-full h-64 lg:h-96 bg-gray-800 flex items-center justify-center">
         <div className="text-center text-white">
-          <div className="text-4xl mb-3">🎬</div>
+          <div className="text-4xl mb-3">
+            {isEnrolled || course.price === 0 ? '🎬' : '🔒'}
+          </div>
           <p className="text-xl font-medium mb-2">
             {isEnrolled || course.price === 0 
-              ? 'Video Not Available' 
+              ? 'Video Coming Soon' 
               : 'Enroll to Access Videos'
             }
           </p>
           <p className="text-gray-400">
             {isEnrolled || course.price === 0 
-              ? 'The instructor hasn\'t uploaded a video for this lesson yet.' 
+              ? 'The instructor is preparing this lesson content.' 
               : 'Purchase this course to watch all videos'
             }
           </p>
@@ -219,23 +318,6 @@ export default function CourseDetail() {
       </div>
     )}
   </div>
-  
-  {selectedLesson && (
-    <div className="mt-4 bg-white rounded-lg p-4 shadow-sm">
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
-        {selectedLesson.title}
-      </h3>
-      <p className="text-gray-600 mb-3">{selectedLesson.description}</p>
-      <div className="flex items-center text-sm text-gray-500 space-x-4">
-        <span>Duration: {selectedLesson.duration_minutes} minutes</span>
-        {selectedLesson.video_path && (
-          <span className="text-green-600 font-medium">
-            ✅ Video Available
-          </span>
-        )}
-      </div>
-    </div>
-  )}
 </div>
 
           <div className="prose max-w-none mb-6">
@@ -390,27 +472,61 @@ export default function CourseDetail() {
           </div>
 
           {/* Progress Section for Enrolled Students */}
-          {isEnrolled && (
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mt-6">
-              <h3 className="text-lg font-semibold mb-4">Your Progress</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Course Progress</span>
-                    <span>0%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    Start watching lessons to track your progress
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+
+{isEnrolled && (
+  <div className="mt-8">
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+      <h3 className="text-xl font-semibold mb-4">Course Quiz</h3>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-gray-600 mb-2">
+            Test your knowledge with the course quiz
+          </p>
+          <div className="flex items-center space-x-4 text-sm text-gray-500">
+            <span>Multiple choice questions</span>
+            <span>•</span>
+            <span>Instant results</span>
+            <span>•</span>
+            <span>Detailed feedback</span>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowQuizModal(true)}
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+        >
+          Take Quiz
+        </button>
+      </div>
+    </div>
+
+    {/* Instructor Quiz Management Link */}
+    {user?.id === course.instructor_id && (
+      <div className="mt-4 text-center">
+        <Link 
+          to={`/courses/${course.id}/quiz-management`}
+          className="text-blue-600 hover:text-blue-700 font-semibold"
+        >
+          Manage Quiz Settings →
+        </Link>
+      </div>
+    )}
+  </div>
+)}
+
+{/* Add the modal at the end of the component */}
+<QuizModal
+  courseId={course?.id}
+  courseTitle={course?.title}
+  isOpen={showQuizModal}
+  onClose={() => setShowQuizModal(false)}
+  onQuizComplete={(results) => {
+    // Update progress when quiz is completed
+    if (results.passed) {
+      fetchProgress();
+    }
+  }}
+/>
+
         </div>
       </div>
     </div>

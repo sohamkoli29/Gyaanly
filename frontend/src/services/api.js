@@ -165,6 +165,20 @@ export const coursesAPI = {
     }),
 };
 
+// Progress API calls
+export const progressAPI = {
+  // Update lesson progress
+  updateProgress: (progressData) =>
+    apiRequest('/enrollments/progress', {
+      method: 'POST',
+      body: progressData,
+    }),
+
+  // Get course progress
+  getCourseProgress: (courseId) =>
+    apiRequest(`/enrollments/progress/${courseId}`),
+};
+
 // Enrollment API calls
 export const enrollmentsAPI = {
   // Enroll in a course
@@ -181,10 +195,96 @@ export const enrollmentsAPI = {
   checkEnrollment: (courseId) => apiRequest(`/enrollments/check/${courseId}`),
 };
 
+// Quiz API calls
+export const quizAPI = {
+  // Get quiz for a course
+
+   getQuizByCourse: async (courseId) => {
+    try {
+      const response = await apiRequest(`/quizzes/course/${courseId}`);
+      
+      console.log('Quiz API Response:', response);
+      
+      // Handle the case where quiz is null (no quiz exists)
+      if (response.quiz === null) {
+        throw new Error('NO_QUIZ_FOUND');
+      }
+      
+      return response;
+    } catch (error) {
+      console.log('Quiz fetch error details:', {
+        courseId,
+        errorMessage: error.message,
+        errorType: error.message.includes('NO_QUIZ_FOUND') ? 'NO_QUIZ' : 'OTHER_ERROR'
+      });
+      
+      // If it's a "no quiz found" case, re-throw with specific message
+      if (error.message.includes('NO_QUIZ_FOUND')) {
+        throw new Error('NO_QUIZ_FOUND');
+      }
+      throw error;
+    }
+  },
+  // Submit quiz attempt
+  submitQuizAttempt: (quizId, attemptData) => 
+    apiRequest(`/quizzes/${quizId}/attempt`, {
+      method: 'POST',
+      body: attemptData,
+    }),
+  
+  // Create quiz
+  createQuiz: (courseId, quizData) => 
+    apiRequest(`/quizzes/course/${courseId}`, {
+      method: 'POST',
+      body: quizData,
+    }),
+  
+  // Update quiz
+  updateQuiz: (quizId, quizData) => 
+    apiRequest(`/quizzes/${quizId}`, {
+      method: 'PUT',
+      body: quizData,
+    }),
+
+  // Delete quiz
+  deleteQuiz: (quizId) => 
+    apiRequest(`/quizzes/${quizId}`, {
+      method: 'DELETE',
+    }),
+  
+  // Get user's quiz attempts
+  getQuizAttempts: async (courseId) => {
+  try {
+    console.log(`📡 Fetching quiz attempts for course: ${courseId}`);
+    const response = await apiRequest(`/quizzes/attempts/${courseId}`);
+    
+    console.log('📊 Quiz attempts API response:', response);
+    
+    // Handle different response structures
+    if (response.attempts !== undefined) {
+      return response;
+    } else if (Array.isArray(response)) {
+      return { attempts: response };
+    } else {
+      console.warn('⚠️ Unexpected quiz attempts response structure:', response);
+      return { attempts: [] };
+    }
+  } catch (error) {
+    console.error('❌ Quiz attempts fetch error:', error);
+    
+    // If it's a "no attempts" error, return empty array
+    if (error.message.includes('No attempts') || error.message.includes('404')) {
+      return { attempts: [] };
+    }
+    throw error;
+  }
+},
+};
+
 // Health check
 export const healthCheck = () => apiRequest('/health');
 
-// Currency formatting (keep existing)
+// Currency formatting
 export const formatCoursePrice = (price) => {
   if (price === 0) return 'Free';
   return new Intl.NumberFormat('en-IN', {

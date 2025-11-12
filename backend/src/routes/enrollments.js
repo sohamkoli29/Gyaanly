@@ -392,4 +392,68 @@ async function updateCourseProgress(user_id, course_id) {
     throw error;
   }
 }
+
+// GET /api/enrollments/certificate/:courseId - Check certificate eligibility
+router.get('/certificate/:courseId', authenticateToken, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const user_id = req.user.id;
+
+    // Get course progress
+    const progressData = await updateCourseProgress(user_id, courseId);
+    
+    const eligibleForCertificate = progressData.progressPercent >= 100;
+
+    res.json({
+      eligible: eligibleForCertificate,
+      progress: progressData.progressPercent,
+      completedLessons: progressData.completedLessonsCount,
+      totalLessons: progressData.totalLessons,
+      courseId: courseId,
+      userId: user_id
+    });
+  } catch (error) {
+    console.error('Certificate check error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/enrollments/complete-lesson - Mark lesson as completed
+router.post('/complete-lesson', authenticateToken, async (req, res) => {
+  try {
+    const { course_id, lesson_id } = req.body;
+    const user_id = req.user.id;
+
+    // Update lesson progress to 100% and mark as completed
+    const { data: progress, error } = await supabase
+      .from('lesson_progress')
+      .upsert({
+        user_id,
+        course_id,
+        lesson_id,
+        progress_percent: 100,
+        completed: true,
+        last_watched: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,lesson_id'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update overall course progress
+    const courseProgress = await updateCourseProgress(user_id, course_id);
+
+    res.json({
+      message: 'Lesson marked as completed',
+      progress,
+      courseProgress
+    });
+  } catch (error) {
+    console.error('Complete lesson error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 export default router;

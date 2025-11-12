@@ -177,6 +177,23 @@ export const progressAPI = {
   // Get course progress
   getCourseProgress: (courseId) =>
     apiRequest(`/enrollments/progress/${courseId}`),
+  checkCertificateEligibility: (courseId) =>
+    apiRequest(`/enrollments/certificate/${courseId}`),
+  
+  // Mark lesson as completed
+  completeLesson: (courseId, lessonId) =>
+    apiRequest('/enrollments/complete-lesson', {
+      method: 'POST',
+      body: {
+        course_id: courseId,
+        lesson_id: lessonId
+      }
+    }),
+
+  // Get detailed progress analytics
+  getProgressAnalytics: (courseId) =>
+    apiRequest(`/enrollments/analytics/${courseId}`)
+
 };
 
 // Enrollment API calls

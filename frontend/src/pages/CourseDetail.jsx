@@ -4,7 +4,7 @@ import { coursesAPI, progressAPI, quizAPI } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 import { formatCurrency, formatPrice } from '../utils/currency';
 import VideoPlayer from '../components/VideoPlayer';
-
+import ProgressTracker from '../components/ProgressTracker';
 import QuizModal from '../components/QuizModal';
 
 
@@ -475,6 +475,10 @@ const handleProgressUpdate = (progressData) => {
 
 {isEnrolled && (
   <div className="mt-8">
+      <ProgressTracker 
+      courseId={course.id}
+      onProgressUpdate={fetchProgress}
+    />
     <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
       <h3 className="text-xl font-semibold mb-4">Course Quiz</h3>
       <div className="flex items-center justify-between">

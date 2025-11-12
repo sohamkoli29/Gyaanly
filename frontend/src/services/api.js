@@ -298,6 +298,35 @@ export const quizAPI = {
 },
 };
 
+
+// Certificate API calls
+export const certificateAPI = {
+  // Generate certificate
+  generateCertificate: (courseId) =>
+    apiRequest('/certificates/generate', {
+      method: 'POST',
+      body: { course_id: courseId }
+    }),
+
+  // Get user's certificates
+  getMyCertificates: () => apiRequest('/certificates/my-certificates'),
+
+  // Get certificate by ID
+  getCertificate: (certificateId) => apiRequest(`/certificates/${certificateId}`),
+
+  // Verify certificate
+  verifyCertificate: (certificateNumber) => 
+    apiRequest(`/certificates/verify/${certificateNumber}`),
+
+  // Auto-generate certificate
+  autoGenerateCertificate: (courseId) =>
+    apiRequest(`/certificates/auto-generate/${courseId}`, {
+      method: 'POST'
+    })
+};
+
+
+
 // Health check
 export const healthCheck = () => apiRequest('/health');
 

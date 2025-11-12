@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { coursesAPI, progressAPI, quizAPI } from '../services/api'; 
+import { coursesAPI, progressAPI, quizAPI,certificateAPI  } from '../services/api'; 
 import { supabase } from '../services/supabaseClient';
 import { formatCurrency, formatPrice } from '../utils/currency';
 import VideoPlayer from '../components/VideoPlayer';
@@ -27,7 +27,7 @@ const [lessonProgress, setLessonProgress] = useState([]);
 const [activeTab, setActiveTab] = useState('lessons');
 const [showQuizModal, setShowQuizModal] = useState(false);
 const [hasQuiz, setHasQuiz] = useState(false);
-
+const [hasCertificate, setHasCertificate] = useState(false);
 const checkQuizExists = async () => {
   try {
     const response = await quizAPI.getQuizByCourse(id);
@@ -48,7 +48,36 @@ useEffect(() => {
     checkQuizExists();
   }
 }, [isEnrolled, id]);
+useEffect(() => {
+  const checkAndGenerateCertificate = async () => {
+    if (isEnrolled && courseProgress.progress_percent >= 100) {
+      try {
+        // Check if certificate already exists
+        const certificates = await certificateAPI.getMyCertificates();
+        const existingCert = certificates.certificates?.find(
+          cert => cert.course_id === course.id
+        );
+        
+        if (!existingCert) {
+          // Auto-generate certificate
+          const result = await certificateAPI.autoGenerateCertificate(course.id);
+          if (result.auto_generation) {
+            console.log('Certificate auto-generated!');
+            setHasCertificate(true);
+          }
+        } else {
+          setHasCertificate(true);
+        }
+      } catch (error) {
+        console.log('Auto-generation note:', error.message);
+      }
+    }
+  };
 
+  if (course && isEnrolled) {
+    checkAndGenerateCertificate();
+  }
+}, [courseProgress.progress_percent, isEnrolled, course]);
   useEffect(() => {
     checkAuth();
     fetchCourse();

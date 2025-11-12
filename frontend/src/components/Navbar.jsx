@@ -81,6 +81,9 @@ export default function Navbar() {
                 <Link to="/my-courses" className="text-gray-600 hover:text-blue-600 transition-colors">
                   My Courses
                 </Link>
+                <Link to="/my-certificates" className="text-gray-600 hover:text-blue-600 transition-colors">
+  Certificates
+</Link>
                 <Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">
                   Profile
                 </Link>

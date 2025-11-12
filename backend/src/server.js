@@ -9,7 +9,7 @@ import enrollmentRoutes from './routes/enrollments.js';
 import uploadRoutes from './routes/upload.js';
 import debugRoutes from './routes/debug.js';
 import quizRoutes from './routes/quizzes.js';
-
+import certificateRoutes from './routes/certificates.js';
 
 dotenv.config();
 
@@ -80,6 +80,7 @@ app.use('/api/upload', uploadRoutes); // Upload routes (all require auth)
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/certificates', certificateRoutes);
 app.use('/api/debug', debugRoutes);
 
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { progressAPI } from '../services/api';
+import { progressAPI, certificateAPI } from '../services/api';
 
 export default function ProgressTracker({ courseId, onProgressUpdate }) {
   const [progress, setProgress] = useState({
@@ -8,11 +8,13 @@ export default function ProgressTracker({ courseId, onProgressUpdate }) {
     totalLessons: 0,
     lessonProgress: []
   });
+  const [hasCertificate, setHasCertificate] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (courseId) {
       fetchProgress();
+      checkCertificate();
     }
   }, [courseId]);
 
@@ -29,6 +31,31 @@ export default function ProgressTracker({ courseId, onProgressUpdate }) {
       console.error('Error fetching progress:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkCertificate = async () => {
+    try {
+      // Check if certificate exists for this course
+      const certificates = await certificateAPI.getMyCertificates();
+      const hasCert = certificates.certificates?.some(
+        cert => cert.course_id === courseId
+      );
+      setHasCertificate(hasCert);
+    } catch (error) {
+      console.error('Error checking certificate:', error);
+      setHasCertificate(false);
+    }
+  };
+
+  const handleGenerateCertificate = async () => {
+    try {
+      await certificateAPI.generateCertificate(courseId);
+      setHasCertificate(true);
+      alert('Certificate generated successfully!');
+    } catch (error) {
+      console.error('Error generating certificate:', error);
+      alert('Error generating certificate: ' + error.message);
     }
   };
 
@@ -76,7 +103,7 @@ export default function ProgressTracker({ courseId, onProgressUpdate }) {
       </div>
 
       {/* Progress Stats */}
-      <div className="grid grid-cols-2 gap-4 text-center">
+      <div className="grid grid-cols-2 gap-4 text-center mb-6">
         <div className="bg-blue-50 rounded-lg p-3">
           <div className="text-2xl font-bold text-blue-600">{progress.completedLessons}</div>
           <div className="text-sm text-blue-800">Completed</div>
@@ -92,15 +119,45 @@ export default function ProgressTracker({ courseId, onProgressUpdate }) {
         </div>
       </div>
 
-      {/* Certificate Eligibility */}
+      {/* Certificate Section */}
       {progress.overall >= 100 && (
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center">
-            <span className="text-yellow-600 mr-2">🎓</span>
-            <span className="text-sm text-yellow-800 font-medium">
-              Congratulations! You've completed this course and earned a certificate.
-            </span>
-          </div>
+        <div className="border-t pt-4">
+          {hasCertificate ? (
+            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-green-600 text-2xl mb-2">🎓</div>
+              <h4 className="font-semibold text-green-800 mb-1">Certificate Earned!</h4>
+              <p className="text-sm text-green-700 mb-3">
+                Congratulations! You've completed this course.
+              </p>
+              <a 
+                href="/my-certificates" 
+                className="inline-block bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                View Certificate
+              </a>
+            </div>
+          ) : (
+            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="text-yellow-600 text-2xl mb-2">🏆</div>
+              <h4 className="font-semibold text-yellow-800 mb-1">Course Completed!</h4>
+              <p className="text-sm text-yellow-700 mb-3">
+                You've completed all lessons. Generate your certificate now.
+              </p>
+              <button
+                onClick={handleGenerateCertificate}
+                className="bg-yellow-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-yellow-700 transition-colors"
+              >
+                Generate Certificate
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Progress towards certificate */}
+      {progress.overall < 100 && (
+        <div className="text-center text-sm text-gray-600 mt-4">
+          Complete all lessons to earn your certificate
         </div>
       )}
     </div>

@@ -5,7 +5,7 @@ import { supabase } from '../services/supabaseClient';
 import LessonManager from '../components/LessonManager';
 import VideoPlayer from '../components/VideoPlayer';
 import { formatCurrency } from '../utils/currency';
-import VideoDebugger from '../components/VideoDebugger';
+
 
 export default function InstructorDashboard() {
   const [courses, setCourses] = useState([]);
@@ -339,12 +339,7 @@ export default function InstructorDashboard() {
                 )}
               </div>
 
-              {selectedCourse && (
-                <VideoDebugger 
-                  courseId={selectedCourse.id}
-                  lessons={selectedCourse.lessons || []}
-                />
-              )}
+           
 
               {/* LESSON MANAGER */}
               <LessonManager

@@ -270,7 +270,7 @@ router.post('/auto-generate/:courseId', authenticateToken, async (req, res) => {
     }
 
     // Auto-generate certificate by calling the generate endpoint
-    const generateResponse = await fetch(`http://localhost:${process.env.PORT || 5000}/api/certificates/generate`, {
+    const generateResponse = await fetch(`${process.env.BACKEND_URL}/api/certificates/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

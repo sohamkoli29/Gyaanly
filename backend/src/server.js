@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 
 // CORS Configuration - IMPORTANT for file uploads
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // Frontend URLs
+  origin: process.env.FRONTEND_URL, // Frontend URLs
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

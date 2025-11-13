@@ -64,7 +64,7 @@ const handleSignup = async (e) => {
         role: 'student' // Default role
       };
 
-      await fetch('http://localhost:5000/api/auth/profile', {
+      await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

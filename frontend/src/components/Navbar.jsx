@@ -113,9 +113,13 @@
               onClick={() => setMobileMenuOpen(false)}
             >
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-white font-black text-xl">G</span>
-                </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+  <img 
+    src="/logo.svg" 
+    alt="Gyaanly Logo" 
+    className="w-8 h-8 object-contain" 
+  />
+</div>
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-600 blur-md opacity-50 group-hover:opacity-100 transition-opacity" />
               </div>
               <span className="font-black text-2xl gradient-text hidden sm:block">

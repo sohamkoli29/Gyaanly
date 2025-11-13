@@ -10,6 +10,8 @@ import uploadRoutes from './routes/upload.js';
 import debugRoutes from './routes/debug.js';
 import quizRoutes from './routes/quizzes.js';
 import certificateRoutes from './routes/certificates.js';
+import paymentRoutes from './routes/payments.js';
+
 
 dotenv.config();
 
@@ -81,6 +83,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/debug', debugRoutes);
 
 

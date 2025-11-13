@@ -325,7 +325,31 @@ export const certificateAPI = {
     })
 };
 
+// Payment API calls
+export const paymentAPI = {
+  // Create payment order
+  createOrder: (courseId, amount) =>
+    apiRequest('/payments/create-order', {
+      method: 'POST',
+      body: {
+        course_id: courseId,
+        amount: amount
+      }
+    }),
 
+  // Verify payment
+  verifyPayment: (paymentData) =>
+    apiRequest('/payments/verify-payment', {
+      method: 'POST',
+      body: paymentData
+    }),
+
+  // Get payment history
+  getPaymentHistory: () => apiRequest('/payments/history'),
+
+  // Get payment details
+  getPayment: (paymentId) => apiRequest(`/payments/${paymentId}`)
+};
 
 // Health check
 export const healthCheck = () => apiRequest('/health');

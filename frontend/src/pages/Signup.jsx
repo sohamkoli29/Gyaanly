@@ -20,103 +20,127 @@ export default function Signup() {
     })
   }
 
-// In the handleSignup function, update the profile creation:
-const handleSignup = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  if (formData.password !== formData.confirmPassword) {
-    setError("Passwords don't match");
-    setLoading(false);
-    return;
-  }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
 
-  try {
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: {
-          full_name: formData.fullName,
-        }
-      }
-    });
-
-    if (authError) throw authError;
-
-    if (authData.user) {
-      console.log('User created, setting role as student...');
-      
-      // Sign in immediately to get token
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+          }
+        }
       });
 
-      if (signInError) throw signInError;
+      if (authError) throw authError;
 
-      // Create profile with student role
-      const profileData = {
-        full_name: formData.fullName,
-        username: formData.email.split('@')[0],
-        avatar_url: '',
-        role: 'student' // Default role
-      };
+      if (authData.user) {
+        console.log('User created, setting role as student...');
+        
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
 
-      await fetch(`${API_BASE_URL}/auth/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${signInData.session.access_token}`
-        },
-        body: JSON.stringify(profileData)
-      });
+        if (signInError) throw signInError;
 
-      console.log('Profile created with student role');
-      alert('Account created successfully! You can now login.');
-      navigate('/login');
+        const profileData = {
+          full_name: formData.fullName,
+          username: formData.email.split('@')[0],
+          avatar_url: '',
+          role: 'student'
+        };
+
+        await fetch(`${API_BASE_URL}/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${signInData.session.access_token}`
+          },
+          body: JSON.stringify(profileData)
+        });
+
+        console.log('Profile created with student role');
+        alert('Account created successfully! You can now login.');
+        navigate('/login');
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    setError(error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">L</span>
-          </div>
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-          Create your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            sign in to your existing account
-          </Link>
-        </p>
-      </div>
+    <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Animated Background */}
+      <div className="grid-bg fixed inset-0 opacity-30 pointer-events-none" />
+      
+      {/* Floating Elements */}
+      <div className="absolute top-20 right-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-20 left-10 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-1/3 right-1/4 w-8 h-8 border-2 border-purple-400/30 rounded-lg rotate-45 float" />
+      <div className="absolute bottom-1/3 left-1/4 w-6 h-6 border-2 border-pink-400/30 rounded-full float" style={{ animationDelay: '1.5s' }} />
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="max-w-md w-full space-y-8 relative z-10">
+        {/* Header */}
+        <div className="text-center">
+          <Link to="/" className="inline-block">
+            <div className="flex items-center justify-center gap-3 mb-8 group">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-white font-black text-xl">G</span>
+                </div>
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-600 blur-md opacity-50 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <span className="font-black text-3xl gradient-text">
+                Gyaanly
+              </span>
+            </div>
+          </Link>
+
+          <div className="inline-flex items-center gap-2 glass-card px-4 py-2 mb-6">
+            <span className="notification-dot" />
+            <span className="text-sm font-medium text-cyan-400">
+              🚀 Start Your Journey
+            </span>
+          </div>
+
+          <h2 className="text-4xl font-bold gradient-text mb-4">
+            Join Gyaanly
+          </h2>
+          <p className="text-gray-400 text-lg">
+            Create your account and unlock the future of learning
+          </p>
+        </div>
+
+        {/* Signup Form */}
+        <div className="glass-card p-8 space-y-6">
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-              {error}
+            <div className="bg-red-400/10 border border-red-400/30 text-red-400 px-4 py-3 rounded-xl text-sm backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
             </div>
           )}
 
           <form className="space-y-6" onSubmit={handleSignup}>
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                Full Name
+            <div className="space-y-2">
+              <label htmlFor="fullName" className="block text-sm font-semibold text-cyan-400">
+                FULL NAME
               </label>
-              <div className="mt-1">
+              <div className="relative">
                 <input
                   id="fullName"
                   name="fullName"
@@ -125,17 +149,22 @@ const handleSignup = async (e) => {
                   required
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input-cyber pl-12"
                   placeholder="Enter your full name"
                 />
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-cyan-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-cyan-400">
+                EMAIL ADDRESS
               </label>
-              <div className="mt-1">
+              <div className="relative">
                 <input
                   id="email"
                   name="email"
@@ -144,17 +173,22 @@ const handleSignup = async (e) => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input-cyber pl-12"
                   placeholder="Enter your email"
                 />
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-cyan-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-cyan-400">
+                PASSWORD
               </label>
-              <div className="mt-1">
+              <div className="relative">
                 <input
                   id="password"
                   name="password"
@@ -164,17 +198,22 @@ const handleSignup = async (e) => {
                   minLength="6"
                   value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input-cyber pl-12"
                   placeholder="Create a password (min. 6 characters)"
                 />
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-cyan-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-cyan-400">
+                CONFIRM PASSWORD
               </label>
-              <div className="mt-1">
+              <div className="relative">
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
@@ -183,22 +222,62 @@ const handleSignup = async (e) => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="input-cyber pl-12"
                   placeholder="Confirm your password"
                 />
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-cyan-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {loading ? 'Creating account...' : 'Create account'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-neon w-full group relative overflow-hidden"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <span>Creating Account...</span>
+                </div>
+              ) : (
+                <>
+                  <span className="relative z-10">Launch Your Journey</span>
+                  <span className="absolute right-4 text-xl transition-transform group-hover:translate-x-1">🚀</span>
+                </>
+              )}
+            </button>
           </form>
+
+          <div className="pt-6 border-t border-cyan-400/20">
+            <p className="text-center text-gray-400">
+              Already have an account?{' '}
+              <Link 
+                to="/login" 
+                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+              >
+                Sign in here
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Benefits */}
+        <div className="grid grid-cols-2 gap-4 text-center">
+          {[
+            { icon: '⚡', text: 'Instant Access' },
+            { icon: '🛡️', text: 'Secure' },
+            { icon: '🎯', text: 'AI Powered' },
+            { icon: '🚀', text: 'Future Ready' }
+          ].map((benefit, index) => (
+            <div key={index} className="glass-card p-3">
+              <div className="text-cyan-400 text-sm">{benefit.icon}</div>
+              <div className="text-xs text-gray-400 mt-1">{benefit.text}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

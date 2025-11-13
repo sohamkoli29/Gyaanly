@@ -10,6 +10,7 @@ export default function MyCourses() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [previewLesson, setPreviewLesson] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all'); // all, in-progress, completed
 
   useEffect(() => {
     checkAuth();
@@ -35,7 +36,6 @@ export default function MyCourses() {
   };
 
   const showVideoPreview = (course) => {
-    // Find first lesson with video that's ready to stream
     const lessonWithVideo = course.lessons?.find(lesson => 
       lesson.video_path && lesson.upload_status === 'ready'
     );
@@ -50,15 +50,29 @@ export default function MyCourses() {
     }
   };
 
+  // Filter enrollments based on active filter
+  const filteredEnrollments = enrollments.filter(enrollment => {
+    if (activeFilter === 'completed') {
+      return enrollment.completed_at;
+    } else if (activeFilter === 'in-progress') {
+      return !enrollment.completed_at;
+    }
+    return true; // 'all'
+  });
+
   if (!user) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">My Courses</h1>
-          <p className="text-gray-600 mb-6">Please log in to view your courses.</p>
-          <Link to="/login" className="btn-primary">
-            Login
-          </Link>
+      <div className="min-h-screen pt-24 pb-12 relative">
+        <div className="grid-bg fixed inset-0 opacity-20 pointer-events-none" />
+        <div className="container-cyber relative z-10 text-center">
+          <div className="glass-card max-w-md mx-auto p-8">
+            <div className="text-6xl mb-4">🔐</div>
+            <h1 className="text-2xl font-bold gradient-text mb-4">Access Required</h1>
+            <p className="text-gray-400 mb-6">Please log in to view your learning dashboard</p>
+            <Link to="/login" className="btn-cyber">
+              Login to Continue
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -66,139 +80,305 @@ export default function MyCourses() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">My Courses</h1>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-              <div className="h-48 bg-gray-200"></div>
-              <div className="p-6">
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                <div className="h-10 bg-gray-200 rounded"></div>
+      <div className="min-h-screen pt-24 pb-12 relative">
+        <div className="grid-bg fixed inset-0 opacity-20 pointer-events-none" />
+        <div className="container-cyber relative z-10">
+          {/* Header Skeleton */}
+          <div className="text-center mb-12">
+            <div className="h-12 w-64 skeleton rounded-lg mx-auto mb-4" />
+            <div className="h-6 w-96 skeleton rounded mx-auto" />
+          </div>
+
+          {/* Filters Skeleton */}
+          <div className="flex justify-center gap-4 mb-8">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-12 w-32 skeleton rounded-xl" />
+            ))}
+          </div>
+
+          {/* Course Grid Skeleton */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="glass-card">
+                <div className="h-48 mb-6 rounded-xl skeleton" />
+                <div className="space-y-3">
+                  <div className="h-6 w-3/4 skeleton rounded" />
+                  <div className="h-4 w-full skeleton rounded" />
+                  <div className="h-4 w-2/3 skeleton rounded" />
+                  <div className="h-12 skeleton rounded-lg mt-4" />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">My Courses</h1>
+    <div className="min-h-screen pt-24 pb-12 relative">
+      {/* Animated Background */}
+      <div className="grid-bg fixed inset-0 opacity-20 pointer-events-none" />
       
-      {/* VIDEO PREVIEW MODAL */}
-      {previewLesson && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">
-                  Preview: {previewLesson.courseTitle} - {previewLesson.lesson.title}
-                </h3>
-                <button
-                  onClick={() => setPreviewLesson(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
-                  ×
-                </button>
+      {/* Floating Elements */}
+      <div className="absolute top-40 left-[5%] w-16 h-16 border-2 border-cyan-400/20 rounded-lg rotate-45 float" />
+      <div className="absolute bottom-40 right-[10%] w-12 h-12 border-2 border-purple-400/20 rounded-full float" style={{ animationDelay: '2s' }} />
+
+      <div className="container-cyber relative z-10">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 glass-card px-4 py-2 mb-6">
+            <span className="notification-dot" />
+            <span className="text-sm font-medium text-cyan-400">
+              🎓 Your Learning Universe
+            </span>
+          </div>
+          
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+            <span className="gradient-text">My Courses</span>
+          </h1>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Continue your journey through the digital learning cosmos
+          </p>
+        </div>
+
+        {/* Stats & Filters */}
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-6 mb-8">
+          {/* Stats */}
+          <div className="flex gap-6">
+            <div className="glass-card px-6 py-4 text-center">
+              <div className="text-2xl font-bold gradient-text">{enrollments.length}</div>
+              <div className="text-sm text-gray-400">Total Courses</div>
+            </div>
+            <div className="glass-card px-6 py-4 text-center">
+              <div className="text-2xl font-bold gradient-text">
+                {enrollments.filter(e => !e.completed_at).length}
               </div>
-              <VideoPlayer
-                lessonId={previewLesson.lesson.id}
-                videoPath={previewLesson.lesson.video_path}
-                className="w-full h-96"
-              />
-              <div className="mt-4 text-center">
-                <button
-                  onClick={() => setPreviewLesson(null)}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Close Preview
-                </button>
+              <div className="text-sm text-gray-400">In Progress</div>
+            </div>
+            <div className="glass-card px-6 py-4 text-center">
+              <div className="text-2xl font-bold gradient-text">
+                {enrollments.filter(e => e.completed_at).length}
+              </div>
+              <div className="text-sm text-gray-400">Completed</div>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-2 glass-card p-2">
+            {[
+              { key: 'all', label: 'All Courses', icon: '🌌' },
+              { key: 'in-progress', label: 'In Progress', icon: '🚀' },
+              { key: 'completed', label: 'Completed', icon: '🏆' }
+            ].map((filter) => (
+              <button
+                key={filter.key}
+                onClick={() => setActiveFilter(filter.key)}
+                className={`
+                  px-4 py-2 rounded-lg font-medium transition-all duration-300
+                  ${activeFilter === filter.key
+                    ? 'bg-cyan-400/20 text-cyan-400 shadow-neon-sm'
+                    : 'text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10'
+                  }
+                `}
+              >
+                <span className="mr-2">{filter.icon}</span>
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* VIDEO PREVIEW MODAL */}
+        {previewLesson && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+            <div className="glass-card max-w-4xl w-full max-h-[90vh] overflow-auto border-2 border-cyan-400/30">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-2xl font-bold gradient-text mb-2">
+                      Preview: {previewLesson.courseTitle}
+                    </h3>
+                    <p className="text-cyan-400">{previewLesson.lesson.title}</p>
+                  </div>
+                  <button
+                    onClick={() => setPreviewLesson(null)}
+                    className="text-cyan-400 hover:text-cyan-300 text-2xl transition-colors"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="rounded-xl overflow-hidden border-2 border-cyan-400/20 bg-black">
+                  <VideoPlayer
+                    lessonId={previewLesson.lesson.id}
+                    videoPath={previewLesson.lesson.video_path}
+                    className="w-full h-96"
+                  />
+                </div>
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => setPreviewLesson(null)}
+                    className="btn-ghost"
+                  >
+                    Close Preview
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-      
-      {enrollments.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">📚</div>
-          <h2 className="text-2xl font-bold text-gray-600 mb-4">No courses yet</h2>
-          <p className="text-gray-500 mb-6">Enroll in your first course to start learning!</p>
-          <Link to="/courses" className="btn-primary">
-            Browse Courses
-          </Link>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {enrollments.map((enrollment) => {
-            // FIXED: Use the correct variable name 'enrollment' instead of 'enrollment'
-            const hasVideos = enrollment.courses.lessons?.some(lesson => 
-              lesson.video_path && lesson.upload_status === 'ready'
-            );
-            const videoCount = enrollment.courses.lessons?.filter(lesson => 
-              lesson.video_path && lesson.upload_status === 'ready'
-            ).length || 0;
-            
-            return (
-              <div key={enrollment.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-48 bg-gray-200 relative">
-                  {enrollment.courses.thumbnail_url && (
-                    <img 
-                      src={enrollment.courses.thumbnail_url} 
-                      alt={enrollment.courses.title}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  {/* VIDEO BADGE */}
-                  {hasVideos && (
-                    <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">
-                      {videoCount} video{videoCount !== 1 ? 's' : ''}
-                    </div>
-                  )}
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-2">{enrollment.courses.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{enrollment.courses.description}</p>
-                  
-                  <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                    <span>By {enrollment.courses.profiles?.full_name || 'Instructor'}</span>
-                    <span className="capitalize">{enrollment.courses.level}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-gray-600">
-                      Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                    </span>
-                    {enrollment.completed_at && (
-                      <span className="text-green-600 text-sm font-medium">✅ Completed</span>
+        )}
+        
+        {filteredEnrollments.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="glass-card max-w-md mx-auto p-8">
+              <div className="text-6xl mb-4">🌠</div>
+              <h2 className="text-2xl font-bold gradient-text mb-4">
+                {activeFilter === 'all' ? 'No Courses Yet' : 
+                 activeFilter === 'in-progress' ? 'No Courses in Progress' : 
+                 'No Courses Completed'}
+              </h2>
+              <p className="text-gray-400 mb-6">
+                {activeFilter === 'all' 
+                  ? 'Begin your learning journey by enrolling in your first course!' 
+                  : activeFilter === 'in-progress'
+                  ? 'All your enrolled courses are completed! Start a new one.'
+                  : 'Complete some courses to see them here.'
+                }
+              </p>
+              <Link to="/courses" className="btn-cyber">
+                Explore Courses
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {filteredEnrollments.map((enrollment) => {
+              const hasVideos = enrollment.courses.lessons?.some(lesson => 
+                lesson.video_path && lesson.upload_status === 'ready'
+              );
+              const videoCount = enrollment.courses.lessons?.filter(lesson => 
+                lesson.video_path && lesson.upload_status === 'ready'
+              ).length || 0;
+              
+              return (
+                <div 
+                  key={enrollment.id} 
+                  className="glass-card holographic card-hover group"
+                >
+                  {/* Course Image */}
+                  <div className="relative h-48 mb-6 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500/20 to-purple-500/20">
+                    {enrollment.courses.thumbnail_url ? (
+                      <img 
+                        src={enrollment.courses.thumbnail_url} 
+                        alt={enrollment.courses.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-6xl">
+                        📚
+                      </div>
                     )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3">
+                      {enrollment.completed_at ? (
+                        <span className="badge-cyber bg-green-400/20 text-green-400 border-green-400/40">
+                          🏆 Completed
+                        </span>
+                      ) : (
+                        <span className="badge-cyber bg-cyan-400/20 text-cyan-400">
+                          🚀 In Progress
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Video Badge */}
+                    {hasVideos && (
+                      <div className="absolute top-3 right-3 badge-cyber bg-purple-400/20 text-purple-400 border-purple-400/40">
+                        🎬 {videoCount} video{videoCount !== 1 ? 's' : ''}
+                      </div>
+                    )}
+
+                    {/* Level Badge */}
+                    <div className="absolute bottom-3 left-3 badge-cyber">
+                      {enrollment.courses.level}
+                    </div>
                   </div>
 
-                  {/* PREVIEW BUTTON */}
-                  {hasVideos && (
-                    <button
-                      onClick={() => showVideoPreview(enrollment.courses)}
-                      className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition-colors mb-2"
-                    >
-                      Preview Video
-                    </button>
-                  )}
+                  {/* Course Content */}
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-2">
+                      {enrollment.courses.title}
+                    </h3>
+                    
+                    <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">
+                      {enrollment.courses.description}
+                    </p>
 
-                  <Link 
-                    to={`/courses/${enrollment.courses.id}`}
-                    className="block w-full bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 transition-colors"
-                  >
-                    {enrollment.completed_at ? 'Review Course' : 'Continue Learning'}
-                  </Link>
+                    {/* Instructor & Enrollment Info */}
+                    <div className="flex items-center justify-between pt-4 border-t border-cyan-400/20">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                          {enrollment.courses.profiles?.full_name?.charAt(0) || 'I'}
+                        </div>
+                        <span className="text-sm text-gray-400">
+                          {enrollment.courses.profiles?.full_name || 'Instructor'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4 border-t border-cyan-400/20">
+                      {hasVideos && (
+                        <button
+                          onClick={() => showVideoPreview(enrollment.courses)}
+                          className="flex-1 btn-ghost text-sm py-2 group"
+                        >
+                          <span>Preview</span>
+                          <span className="inline-block ml-1 transition-transform group-hover:translate-x-1">🎬</span>
+                        </button>
+                      )}
+                      
+                      <Link 
+                        to={`/courses/${enrollment.courses.id}`}
+                        className={`flex-1 text-center btn-cyber text-sm py-2 group ${
+                          !hasVideos ? 'flex-1' : 'flex-1'
+                        }`}
+                      >
+                        <span>{enrollment.completed_at ? 'Review' : 'Continue'}</span>
+                        <span className="inline-block ml-1 transition-transform group-hover:translate-x-1">
+                          {enrollment.completed_at ? '🔁' : '🚀'}
+                        </span>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+
+        {/* CTA Section for Empty State */}
+        {enrollments.length === 0 && (
+          <div className="mt-16 text-center">
+            <div className="glass-card max-w-2xl mx-auto p-8">
+              <h3 className="text-2xl font-bold gradient-text mb-4">
+                Ready to Launch Your Learning Journey?
+              </h3>
+              <p className="text-gray-400 mb-6">
+                Discover cutting-edge courses and transform your skills with AI-powered learning
+              </p>
+              <Link to="/courses" className="btn-neon">
+                Explore All Courses
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

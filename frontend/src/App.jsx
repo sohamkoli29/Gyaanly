@@ -10,6 +10,7 @@ import Profile from './pages/Profile'
 import InstructorDashboard from './pages/InstructorDashboard'
 import QuizManagement from './pages/QuizManagement' // Add this import
 import MyCertificates from './pages/MyCertificates';
+import PaymentHistory from './pages/PaymentHistory';
 import ErrorBoundary from './components/ErrorBoundary' // Add this import
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
             <Route path="/courses/:courseId/quiz-management" element={<QuizManagement />} />
             <Route path="/my-certificates" element={<MyCertificates />} />
+            <Route path="/payment-history" element={<PaymentHistory />} />
           </Routes>
         </main>
       </div>

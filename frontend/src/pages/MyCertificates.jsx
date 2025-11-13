@@ -41,13 +41,16 @@ export default function MyCertificates() {
 
   if (!user) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">My Certificates</h1>
-          <p className="text-gray-600 mb-6">Please log in to view your certificates.</p>
-          <Link to="/login" className="btn-primary">
-            Login
-          </Link>
+      <div className="min-h-screen pt-24 pb-12 relative">
+        <div className="grid-bg fixed inset-0 opacity-20 pointer-events-none" />
+        <div className="container-cyber relative z-10">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold gradient-text mb-6">Digital Certificates</h1>
+            <p className="text-gray-400 text-lg mb-8">Please authenticate to access your achievement portfolio</p>
+            <Link to="/login" className="btn-cyber">
+              Access Portal
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -55,87 +58,189 @@ export default function MyCertificates() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">My Certificates</h1>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded mb-4"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
-            </div>
-          ))}
+      <div className="min-h-screen pt-24 pb-12 relative">
+        <div className="grid-bg fixed inset-0 opacity-20 pointer-events-none" />
+        <div className="container-cyber relative z-10">
+          <h1 className="text-4xl font-bold gradient-text mb-8">Achievement Portfolio</h1>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="glass-card p-6 animate-pulse">
+                <div className="h-48 skeleton rounded-xl mb-4" />
+                <div className="h-4 skeleton rounded mb-3" />
+                <div className="h-3 skeleton rounded mb-4 w-3/4" />
+                <div className="h-10 skeleton rounded" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">My Certificates</h1>
+    <div className="min-h-screen pt-24 pb-12 relative">
+      {/* Animated Background */}
+      <div className="grid-bg fixed inset-0 opacity-20 pointer-events-none" />
+      
+      {/* Floating Elements */}
+      <div className="absolute top-40 left-[10%] w-20 h-20 border-2 border-cyan-400/20 rounded-lg rotate-45 float" />
+      <div className="absolute bottom-40 right-[15%] w-16 h-16 border-2 border-purple-400/20 rounded-full float" style={{ animationDelay: '2s' }} />
 
-      {selectedCertificate && (
-        <Certificate
-          certificateData={selectedCertificate}
-          onClose={() => setSelectedCertificate(null)}
-        />
-      )}
-
-      {certificates.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🎓</div>
-          <h2 className="text-2xl font-bold text-gray-600 mb-4">No certificates yet</h2>
-          <p className="text-gray-500 mb-6">Complete courses to earn certificates!</p>
-          <Link to="/courses" className="btn-primary">
-            Browse Courses
-          </Link>
+      <div className="container-cyber relative z-10">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 glass-card px-4 py-2 mb-4">
+            <span className="notification-dot" />
+            <span className="text-sm font-medium text-cyan-400">
+              🏆 Achievement Portfolio
+            </span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-bold gradient-text mb-4">
+            Digital Certificates
+          </h1>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            Your verified achievements and blockchain-certified credentials
+          </p>
         </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {certificates.map((certificate) => (
-            <div key={certificate.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow border-2 border-gold-200">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-700 p-4 text-white">
-                <h3 className="text-lg font-semibold truncate">{certificate.course_title}</h3>
-                <p className="text-sm opacity-90">Certificate of Completion</p>
-              </div>
-              <div className="p-6">
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-1">Issued to</p>
-                  <p className="font-semibold text-gray-900">{certificate.student_name}</p>
-                </div>
-                
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-1">Certificate ID</p>
-                  <p className="font-mono text-sm text-gray-700">{certificate.certificate_number}</p>
-                </div>
-                
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-1">Completed on</p>
-                  <p className="text-gray-900">{formatDate(certificate.completed_at)}</p>
-                </div>
 
-                <button
-                  onClick={() => setSelectedCertificate(certificate)}
-                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  View Certificate
-                </button>
-                
-                {certificate.courses?.thumbnail_url && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <Link 
-                      to={`/courses/${certificate.course_id}`}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      View Course →
-                    </Link>
-                  </div>
-                )}
+        {selectedCertificate && (
+          <Certificate
+            certificateData={selectedCertificate}
+            onClose={() => setSelectedCertificate(null)}
+          />
+        )}
+
+        {certificates.length === 0 ? (
+          <div className="glass-card text-center p-12 max-w-2xl mx-auto">
+            <div className="text-6xl mb-6 float">🚀</div>
+            <h2 className="text-2xl font-bold gradient-text mb-4">
+              Begin Your Learning Journey
+            </h2>
+            <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+              Complete advanced courses to unlock exclusive digital certificates and build your professional portfolio
+            </p>
+            <Link to="/courses" className="btn-cyber group">
+              <span>Explore Courses</span>
+              <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
+            </Link>
+            
+            {/* Achievement Stats */}
+            <div className="mt-12 grid grid-cols-3 gap-6 text-center">
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-cyan-400">0</div>
+                <div className="text-sm text-gray-400">Certificates</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-purple-400">∞</div>
+                <div className="text-sm text-gray-400">Potential</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-neon-green">100%</div>
+                <div className="text-sm text-gray-400">Ready to Learn</div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {certificates.map((certificate) => (
+              <div 
+                key={certificate.id} 
+                className="glass-card holographic card-hover group cursor-pointer relative overflow-hidden"
+              >
+                {/* Certificate Header */}
+                <div className="bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 p-4 border-b border-cyan-400/30 relative">
+                  <div className="absolute top-2 right-2 w-3 h-3 bg-neon-green rounded-full animate-pulse" />
+                  <h3 className="text-lg font-bold text-white truncate pr-6">{certificate.course_title}</h3>
+                  <p className="text-sm text-cyan-400 font-medium">Verified Achievement</p>
+                </div>
+                
+                <div className="p-6">
+                  {/* Student Info */}
+                  <div className="mb-6">
+                    <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Issued To</p>
+                    <p className="font-semibold text-white text-lg">{certificate.student_name}</p>
+                  </div>
+                  
+                  {/* Certificate ID */}
+                  <div className="mb-6">
+                    <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Certificate ID</p>
+                    <p className="font-mono text-sm text-cyan-400 bg-cyan-400/10 px-3 py-2 rounded-lg border border-cyan-400/20">
+                      {certificate.certificate_number}
+                    </p>
+                  </div>
+                  
+                  {/* Completion Date */}
+                  <div className="mb-6">
+                    <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Completed</p>
+                    <p className="text-white font-medium">{formatDate(certificate.completed_at)}</p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setSelectedCertificate(certificate)}
+                      className="w-full btn-cyber group relative overflow-hidden"
+                    >
+                      <span className="relative z-10 flex items-center justify-center space-x-2">
+                        <span>View Certificate</span>
+                        <span className="text-lg transition-transform group-hover:scale-110">👁️</span>
+                      </span>
+                    </button>
+                    
+                    {certificate.courses?.thumbnail_url && (
+                      <Link 
+                        to={`/courses/${certificate.course_id}`}
+                        className="w-full btn-ghost group text-center flex items-center justify-center"
+                      >
+                        <span>Course Details</span>
+                        <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Holographic Effect Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                
+                {/* Corner Accents */}
+                <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-cyan-400/50" />
+                <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-purple-400/50" />
+                <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-pink-400/50" />
+                <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-neon-green/50" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Achievement Stats */}
+        {certificates.length > 0 && (
+          <div className="mt-16 glass-card p-8 text-center">
+            <h3 className="text-2xl font-bold gradient-text mb-6">Learning Milestones</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="glass-card p-4">
+                <div className="text-3xl font-bold text-cyan-400">{certificates.length}</div>
+                <div className="text-sm text-gray-400">Certificates Earned</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-3xl font-bold text-purple-400">
+                  {new Set(certificates.map(c => c.course_id)).size}
+                </div>
+                <div className="text-sm text-gray-400">Courses Completed</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-3xl font-bold text-neon-green">
+                  {Math.max(...certificates.map(c => new Date(c.completed_at).getFullYear()))}
+                </div>
+                <div className="text-sm text-gray-400">Latest Achievement</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-3xl font-bold text-pink-400">100%</div>
+                <div className="text-sm text-gray-400">Verification Rate</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

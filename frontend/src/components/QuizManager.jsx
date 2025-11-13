@@ -72,7 +72,6 @@ export default function QuizManager({ courseId, onQuizCreated }) {
       await quizAPI.createQuiz(courseId, quizData);
       setShowForm(false);
       onQuizCreated?.();
-      alert('Quiz created successfully!');
     } catch (error) {
       console.error('Error creating quiz:', error);
       alert('Error creating quiz: ' + error.message);
@@ -86,50 +85,51 @@ export default function QuizManager({ courseId, onQuizCreated }) {
       <div className="text-center py-8">
         <button
           onClick={() => setShowForm(true)}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
+          className="btn-cyber group"
         >
-          Create Quiz for This Course
+          <span>Create Assessment</span>
+          <span className="inline-block ml-2 text-xl transition-transform group-hover:scale-110">🧠</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-xl font-semibold mb-4">Create New Quiz</h3>
+    <div className="glass-card border-2 border-cyan-400/30 p-6">
+      <h3 className="text-2xl font-bold gradient-text mb-6">Create Knowledge Assessment</h3>
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Quiz Title *
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-cyan-400">
+            ASSESSMENT TITLE *
           </label>
           <input
             type="text"
             value={quizData.title}
             onChange={(e) => setQuizData(prev => ({ ...prev, title: e.target.value }))}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter quiz title"
+            className="input-cyber"
+            placeholder="Enter assessment title"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-cyan-400">
+            DESCRIPTION
           </label>
           <textarea
             value={quizData.description}
             onChange={(e) => setQuizData(prev => ({ ...prev, description: e.target.value }))}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter quiz description"
+            className="input-cyber resize-none"
+            placeholder="Describe the assessment objectives..."
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Passing Score (%)
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-cyan-400">
+              PASSING SCORE (%)
             </label>
             <input
               type="number"
@@ -137,113 +137,125 @@ export default function QuizManager({ courseId, onQuizCreated }) {
               max="100"
               value={quizData.passing_score}
               onChange={(e) => setQuizData(prev => ({ ...prev, passing_score: parseInt(e.target.value) }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input-cyber"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Time Limit (minutes)
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-cyan-400">
+              TIME LIMIT (MINUTES)
             </label>
             <input
               type="number"
               min="1"
               value={quizData.time_limit_minutes}
               onChange={(e) => setQuizData(prev => ({ ...prev, time_limit_minutes: parseInt(e.target.value) }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input-cyber"
             />
           </div>
         </div>
 
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="text-lg font-medium">Questions</h4>
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="text-xl font-bold gradient-text flex items-center gap-2">
+              <span>📝</span>
+              Assessment Modules
+            </h4>
             <button
               type="button"
               onClick={addQuestion}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+              className="btn-cyber group text-sm"
             >
-              Add Question
+              <span>+ Add Module</span>
+              <span className="inline-block ml-2 transition-transform group-hover:scale-110">🔧</span>
             </button>
           </div>
 
           <div className="space-y-6">
             {quizData.questions.map((question, index) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-4">
-                  <h5 className="font-medium">Question {index + 1}</h5>
+              <div key={index} className="glass-card border-2 border-cyan-400/20 p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <h5 className="font-bold text-cyan-400 text-lg flex items-center gap-2">
+                    <span className="badge-cyber bg-cyan-400/20 text-cyan-400 border-cyan-400/40">
+                      M{index + 1}
+                    </span>
+                    Knowledge Module {index + 1}
+                  </h5>
                   {quizData.questions.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeQuestion(index)}
-                      className="text-red-600 hover:text-red-700 text-sm"
+                      className="text-red-400 hover:text-red-300 text-sm font-semibold transition-colors flex items-center gap-1"
                     >
-                      Remove
+                      <span>🗑️</span>
+                      <span>Remove</span>
                     </button>
                   )}
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Question Text *
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-cyan-400">
+                      MODULE CONTENT *
                     </label>
                     <input
                       type="text"
                       value={question.question_text}
                       onChange={(e) => updateQuestion(index, 'question_text', e.target.value)}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="input-cyber"
                       placeholder="Enter question text"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Options *
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-cyan-400">
+                      RESPONSE OPTIONS *
                     </label>
-                    <div className="grid gap-2">
+                    <div className="grid gap-3">
                       {['A', 'B', 'C', 'D'].map(optionKey => (
-                        <div key={optionKey} className="flex items-center space-x-3">
-                          <span className="w-6 font-medium">{optionKey}.</span>
+                        <div key={optionKey} className="flex items-center space-x-4">
+                          <span className="w-8 h-8 rounded-full bg-cyan-400/20 border-2 border-cyan-400/40 flex items-center justify-center text-cyan-400 font-bold text-sm">
+                            {optionKey}
+                          </span>
                           <input
                             type="text"
                             value={question.options[optionKey]}
                             onChange={(e) => updateOption(index, optionKey, e.target.value)}
                             required
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder={`Option ${optionKey}`}
+                            className="input-cyber flex-1"
+                            placeholder={`Response ${optionKey}`}
                           />
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Correct Answer *
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-cyan-400">
+                        CORRECT RESPONSE *
                       </label>
                       <select
                         value={question.correct_answer}
                         onChange={(e) => updateQuestion(index, 'correct_answer', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="input-cyber appearance-none cursor-pointer"
                       >
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
+                        <option value="A">Response A</option>
+                        <option value="B">Response B</option>
+                        <option value="C">Response C</option>
+                        <option value="D">Response D</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Points
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-cyan-400">
+                        POINT VALUE
                       </label>
                       <input
                         type="number"
                         min="1"
                         value={question.points}
                         onChange={(e) => updateQuestion(index, 'points', parseInt(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="input-cyber"
                       />
                     </div>
                   </div>
@@ -253,18 +265,28 @@ export default function QuizManager({ courseId, onQuizCreated }) {
           </div>
         </div>
 
-        <div className="flex space-x-3">
+        <div className="flex space-x-4 pt-6 border-t border-cyan-400/20">
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50"
+            className="btn-neon flex-1 group disabled:opacity-50"
           >
-            {loading ? 'Creating Quiz...' : 'Create Quiz'}
+            {loading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                <span>Creating Assessment...</span>
+              </div>
+            ) : (
+              <>
+                <span>Create Assessment</span>
+                <span className="inline-block ml-2 text-xl transition-transform group-hover:scale-110">🚀</span>
+              </>
+            )}
           </button>
           <button
             type="button"
             onClick={() => setShowForm(false)}
-            className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50"
+            className="btn-ghost px-8"
           >
             Cancel
           </button>

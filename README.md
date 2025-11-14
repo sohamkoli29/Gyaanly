@@ -59,8 +59,7 @@ Gyaanly mimics systems like Udemy and Coursera, showcasing the ability to build 
 
 ### 🏆 Certification
 - Automatic certificate generation
-- Blockchain-verified certificates
-- Certificate download and sharing
+
 
 ### 💳 Payment Integration
 - Razorpay payment gateway
